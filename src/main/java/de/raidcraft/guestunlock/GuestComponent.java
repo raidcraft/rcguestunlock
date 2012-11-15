@@ -1,0 +1,279 @@
+package de.raidcraft.guestunlock;
+
+import com.sk89q.commandbook.CommandBook;
+import com.sk89q.minecraft.util.commands.Command;
+import com.sk89q.minecraft.util.commands.CommandContext;
+import com.sk89q.minecraft.util.commands.CommandException;
+import com.sk89q.minecraft.util.commands.CommandPermissions;
+import com.zachsthings.libcomponents.bukkit.BukkitComponent;
+import com.zachsthings.libcomponents.config.ConfigurationBase;
+import com.zachsthings.libcomponents.config.Setting;
+import de.raidcraft.api.database.Database;
+import de.raidcraft.api.database.Table;
+import de.raidcraft.util.PaginatedResult;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+/**
+ * @author Silthus
+ */
+public class GuestComponent extends BukkitComponent implements Listener {
+
+    private static final Random random = new Random();
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+
+    private LocalConfiguration config;
+
+    @Override
+    public void enable() {
+
+        configure(new LocalConfiguration());
+
+        registerCommands(Commands.class);
+        CommandBook.registerEvents(this);
+
+        Database.getInstance().registerTable(GuestTable.class, new GuestTable());
+        // start a task that notifies players when their application was accepted
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(CommandBook.inst(), new Runnable() {
+            @Override
+            public void run() {
+
+                GuestTable table = Database.getTable(GuestTable.class);
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    List<PlayerData> players = table.getPlayers(player.getName());
+                    for (PlayerData data : players) {
+                        if (data.applicationAccepted && data.unlocked == null) {
+                            player.sendMessage(ChatColor.GREEN +
+                                    "Deine Bewerbung wurde soeben angenommen! " +
+                                    "Gebe \"/gast " + ChatColor.RED + data.captcha + ChatColor.GREEN + "\" ein um dich freizuschalten.");
+                        }
+                    }
+                }
+            }
+        }, config.task_delay * 20, config.task_delay * 20);
+    }
+
+    private String generateCaptcha() {
+
+        StringBuffer captchaStringBuffer = new StringBuffer();
+        for (int i = 0; i < config.captcha_length; i++) {
+            int baseCharNumber = Math.abs(random.nextInt()) % 62;
+            int charNumber;
+            if (baseCharNumber < 26) {
+                charNumber = 65 + baseCharNumber;
+            } else if (baseCharNumber < 52){
+                charNumber = 97 + (baseCharNumber - 26);
+            } else {
+                charNumber = 48 + (baseCharNumber - 52);
+            }
+            captchaStringBuffer.append((char)charNumber);
+        }
+
+        return captchaStringBuffer.toString();
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onPlayerJoin(PlayerJoinEvent event) {
+
+        // lets generate that player in the database
+        // the database will return if player already exists
+        Database.getTable(GuestTable.class).addPlayer(event.getPlayer().getName());
+    }
+
+    public static class LocalConfiguration extends ConfigurationBase {
+
+        @Setting("task-delay")public int task_delay = 60;
+        @Setting("captcha-length")public int captcha_length = 6;
+    }
+
+    public class Commands {
+
+        @Command(
+                aliases = {"gast", "unlock", "gunlock", "gu"},
+                desc = "Schaltet Spieler nach erfolgreicher Bewerbung automatisch frei.",
+                usage = "<captcha>",
+                min = 1,
+                max = 1
+        )
+        public void unlock(CommandContext args, CommandSender sender) throws CommandException {
+
+            String pCaptcha = args.getString(0);
+            PlayerData player = Database.getTable(GuestTable.class).getPlayer(sender.getName());
+            if (!player.applicationAccepted) {
+                throw new CommandException("Deine Bewerbung wurde noch nicht angenommen.");
+            }
+            if (player.unlocked != null) {
+                throw new CommandException("Du wurdest bereits freigeschaltet.");
+            }
+            // lets check the captcha CaSE_SEnsteTive
+            if (pCaptcha.equals(player.captcha)) {
+                player.unlock();
+                sender.sendMessage(ChatColor.GREEN + "Du wurdest freigeschaltet. Viel Spass auf " + ChatColor.RED + "Raid-Craft.de");
+            } else {
+                throw new CommandException("Das Captcha ist falsch, bitte überprüfe deine Eingabe.");
+            }
+        }
+
+        @Command(
+                aliases = {"guestlist", "gl"},
+                desc = "Lists guests and their unlock and join dates.",
+                usage = "<partial player name>",
+                min = 1,
+                flags = "p:"
+        )
+        @CommandPermissions("guestunlock.list")
+        public void list(CommandContext args, CommandSender sender) throws CommandException {
+
+            new PaginatedResult<PlayerData>("Player  -  First Join  -  Unlocked") {
+
+                @Override
+                public String format(PlayerData playerData) {
+
+                    StringBuilder sb = new StringBuilder();
+                    sb.append((playerData.applicationAccepted ? ChatColor.GREEN : ChatColor.RED)).append(playerData.name);
+                    sb.append(ChatColor.GRAY).append(ChatColor.ITALIC).append(" - ");
+                    sb.append(DATE_FORMAT.format(playerData.joined)).append(" - ");
+                    sb.append((playerData.unlocked == null ? ChatColor.RED + "Not Unlocked" : DATE_FORMAT.format(playerData.unlocked)));
+                    return sb.toString();
+                }
+            }.display(sender, Database.getTable(GuestTable.class).getPlayers(args.getString(0)), args.getFlagInteger('p', 1));
+        }
+    }
+
+    public class GuestTable extends Table {
+
+        public GuestTable() {
+
+            super("guests", "raidcraft_");
+        }
+
+        @Override
+        public void createTable() {
+
+            try {
+                getConnection().prepareStatement(
+                        "CREATE TABLE `" + getTableName() + "` (\n" +
+                                "`id` INT NOT NULL AUTO_INCREMENT ,\n" +
+                                "`player` VARCHAR( 32 ) NOT NULL ,\n" +
+                                "`captcha` VARCHAR ( 32 ) NOT NULL , \n" +
+                                "`first_join` TIMESTAMP NOT NULL , \n" +
+                                "`application_accepted` BOOLEAN NOT NULL DEFAULT '0' , \n" +
+                                "`unlocked` TIMESTAMP NULL , \n" +
+                                "PRIMARY KEY ( `id` )\n" +
+                                ")").execute();
+            } catch (SQLException e) {
+                CommandBook.logger().severe(e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+        public boolean exists(String player) {
+
+            try {
+                ResultSet resultSet = getConnection().prepareStatement(
+                        "SELECT COUNT(*) as count FROM `" + getTableName() + "` WHERE player='" + player + "'").executeQuery();
+                if (resultSet.next()) {
+                    return resultSet.getInt("count") > 0;
+                }
+            } catch (SQLException e) {
+                CommandBook.logger().severe(e.getMessage());
+                e.printStackTrace();
+            }
+            return false;
+        }
+
+        public void addPlayer(String name) {
+
+            if (exists(name)) {
+                return;
+            }
+            try {
+                getConnection().prepareStatement("INSERT INTO `" + getTableName() + "` " +
+                        "(player, captcha, first_join) VALUES " +
+                        "('" + name + "', '" + generateCaptcha() + "', CURRENT_TIMESTAMP)").execute();
+            } catch (SQLException e) {
+                CommandBook.logger().severe(e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+        public PlayerData getPlayer(String name) {
+
+            try {
+                ResultSet resultSet = getConnection().prepareStatement(
+                        "SELECT * FROM `" + getTableName() + "` WHERE player='" + name + "'").executeQuery();
+                while (resultSet.next()) {
+                    return new PlayerData(resultSet.getString("player"), resultSet);
+                }
+            } catch (SQLException e) {
+                CommandBook.logger().severe(e.getMessage());
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        public List<PlayerData> getPlayers(String name) {
+
+            List<PlayerData> playerDatas = new ArrayList<>();
+            try {
+                ResultSet resultSet = getConnection().prepareStatement(
+                        "SELECT * FROM `" + getTableName() + "` WHERE player IS LIKE '%" + name + "%' ORDER BY unlocked desc").executeQuery();
+                while (resultSet.next()) {
+                    playerDatas.add(new PlayerData(resultSet.getString("player"), resultSet));
+                }
+            } catch (SQLException e) {
+                CommandBook.logger().severe(e.getMessage());
+                e.printStackTrace();
+            }
+            return playerDatas;
+        }
+
+        public void unlockPlayer(String player) {
+
+            try {
+                getConnection().prepareStatement("UPDATE `" + getTableName() + "` " +
+                        "SET (unlocked=CURRENT_TIMESTAMP) WHERE player='" + player + "'").execute();
+            } catch (SQLException e) {
+                CommandBook.logger().severe(e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public class PlayerData {
+
+        public final String name;
+        public final Timestamp joined;
+        public final Timestamp unlocked;
+        public final String captcha;
+        public final boolean applicationAccepted;
+
+        public PlayerData(String name, ResultSet resultSet) throws SQLException {
+
+            this.name = name;
+            this.joined = resultSet.getTimestamp("joined");
+            this.unlocked = resultSet.getTimestamp("unlocked");
+            this.captcha = resultSet.getString("captcha");
+            this.applicationAccepted = resultSet.getBoolean("application_accepted");
+        }
+
+        public void unlock() {
+
+            Database.getTable(GuestTable.class).unlockPlayer(name);
+        }
+    }
+}
