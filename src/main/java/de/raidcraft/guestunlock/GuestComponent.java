@@ -10,6 +10,7 @@ import com.zachsthings.libcomponents.config.ConfigurationBase;
 import com.zachsthings.libcomponents.config.Setting;
 import de.raidcraft.api.database.Database;
 import de.raidcraft.api.database.Table;
+import de.raidcraft.util.EnumUtils;
 import de.raidcraft.util.PaginatedResult;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -41,7 +42,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
     @Override
     public void enable() {
 
-        configure(new LocalConfiguration());
+        this.config = configure(new LocalConfiguration());
 
         registerCommands(Commands.class);
         CommandBook.registerEvents(this);
@@ -56,10 +57,8 @@ public class GuestComponent extends BukkitComponent implements Listener {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     List<PlayerData> players = table.getPlayers(player.getName());
                     for (PlayerData data : players) {
-                        if (data.applicationAccepted && data.unlocked == null) {
-                            player.sendMessage(ChatColor.GREEN +
-                                    "Deine Bewerbung wurde soeben angenommen! " +
-                                    "Gebe \"/gast " + ChatColor.RED + data.captcha + ChatColor.GREEN + "\" ein um dich freizuschalten.");
+                        if (data.isAcceptedAndLocked()) {
+                            data.unlock();
                         }
                     }
                 }
@@ -92,6 +91,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
         // lets generate that player in the database
         // the database will return if player already exists
         Database.getTable(GuestTable.class).addPlayer(event.getPlayer().getName());
+        Database.getTable(GuestTable.class).getPlayer(event.getPlayer().getName()).updateLastJoin();
     }
 
     public static class LocalConfiguration extends ConfigurationBase {
@@ -104,28 +104,17 @@ public class GuestComponent extends BukkitComponent implements Listener {
 
         @Command(
                 aliases = {"gast", "unlock", "gunlock", "gu"},
-                desc = "Schaltet Spieler nach erfolgreicher Bewerbung automatisch frei.",
-                usage = "<captcha>",
-                min = 1,
-                max = 1
+                desc = "Schaltet Spieler nach erfolgreicher Bewerbung frei."
         )
+        @CommandPermissions("guestunlock.unlock")
         public void unlock(CommandContext args, CommandSender sender) throws CommandException {
 
-            String pCaptcha = args.getString(0);
             PlayerData player = Database.getTable(GuestTable.class).getPlayer(sender.getName());
-            if (!player.applicationAccepted) {
-                throw new CommandException("Deine Bewerbung wurde noch nicht angenommen.");
-            }
             if (player.unlocked != null) {
-                throw new CommandException("Du wurdest bereits freigeschaltet.");
+                throw new CommandException("Der Spieler wurde bereits freigeschaltet.");
             }
             // lets check the captcha CaSE_SEnsteTive
-            if (pCaptcha.equals(player.captcha)) {
-                player.unlock();
-                sender.sendMessage(ChatColor.GREEN + "Du wurdest freigeschaltet. Viel Spass auf " + ChatColor.RED + "Raid-Craft.de");
-            } else {
-                throw new CommandException("Das Captcha ist falsch, bitte überprüfe deine Eingabe.");
-            }
+            player.unlock();
         }
 
         @Command(
@@ -144,9 +133,21 @@ public class GuestComponent extends BukkitComponent implements Listener {
                 public String format(PlayerData playerData) {
 
                     StringBuilder sb = new StringBuilder();
-                    sb.append((playerData.applicationAccepted ? ChatColor.GREEN : ChatColor.RED)).append(playerData.name);
+                    switch (playerData.status) {
+
+                        case ACCEPTED:
+                            sb.append(ChatColor.GREEN);
+                            break;
+                        case DENIED:
+                            sb.append(ChatColor.RED);
+                            break;
+                        default:
+                            sb.append(ChatColor.AQUA);
+                            break;
+                    }
+                    sb.append(playerData.name);
                     sb.append(ChatColor.GRAY).append(ChatColor.ITALIC).append(" - ");
-                    sb.append(DATE_FORMAT.format(playerData.joined)).append(" - ");
+                    sb.append(DATE_FORMAT.format(playerData.firstJoin)).append(" - ");
                     sb.append((playerData.unlocked == null ? ChatColor.RED + "Not Unlocked" : DATE_FORMAT.format(playerData.unlocked)));
                     return sb.toString();
                 }
@@ -169,10 +170,11 @@ public class GuestComponent extends BukkitComponent implements Listener {
                         "CREATE TABLE `" + getTableName() + "` (\n" +
                                 "`id` INT NOT NULL AUTO_INCREMENT ,\n" +
                                 "`player` VARCHAR( 32 ) NOT NULL ,\n" +
-                                "`captcha` VARCHAR ( 32 ) NOT NULL , \n" +
-                                "`first_join` TIMESTAMP NOT NULL , \n" +
-                                "`application_accepted` BOOLEAN NOT NULL DEFAULT '0' , \n" +
+                                "`application_status` VARCHAR( 64 ) NOT NULL ,\n" +
+                                "`application_processed` TIMESTAMP NULL , \n" +
                                 "`unlocked` TIMESTAMP NULL , \n" +
+                                "`first_join` TIMESTAMP NOT NULL , \n" +
+                                "`last_join` TIMESTAMP NOT NULL , \n" +
                                 "PRIMARY KEY ( `id` )\n" +
                                 ")").execute();
             } catch (SQLException e) {
@@ -203,8 +205,8 @@ public class GuestComponent extends BukkitComponent implements Listener {
             }
             try {
                 getConnection().prepareStatement("INSERT INTO `" + getTableName() + "` " +
-                        "(player, captcha, first_join) VALUES " +
-                        "('" + name + "', '" + generateCaptcha() + "', CURRENT_TIMESTAMP)").execute();
+                        "(player, first_join, last_join, application_status) VALUES " +
+                        "('" + name + "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'UNKNOWN')").execute();
             } catch (SQLException e) {
                 CommandBook.logger().severe(e.getMessage());
                 e.printStackTrace();
@@ -231,7 +233,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
             List<PlayerData> playerDatas = new ArrayList<>();
             try {
                 ResultSet resultSet = getConnection().prepareStatement(
-                        "SELECT * FROM `" + getTableName() + "` WHERE player IS LIKE '%" + name + "%' ORDER BY unlocked desc").executeQuery();
+                        "SELECT * FROM `" + getTableName() + "` WHERE player IS LIKE '%" + name + "%' ORDER BY last_join desc").executeQuery();
                 while (resultSet.next()) {
                     playerDatas.add(new PlayerData(resultSet.getString("player"), resultSet));
                 }
@@ -252,28 +254,70 @@ public class GuestComponent extends BukkitComponent implements Listener {
                 e.printStackTrace();
             }
         }
+
+        public void updateLastJoin(String player) {
+
+            try {
+                getConnection().prepareStatement("UPDATE `" + getTableName() + "` " +
+                        "SET (last_join=CURRENT_TIMESTAMP) WHERE player='" + player + "')").execute();
+            } catch (SQLException e) {
+                CommandBook.logger().severe(e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
 
     public class PlayerData {
 
         public final String name;
-        public final Timestamp joined;
+        public final Timestamp firstJoin;
+        public final Timestamp lastJoin;
         public final Timestamp unlocked;
-        public final String captcha;
-        public final boolean applicationAccepted;
+        public final Timestamp applicationProcessed;
+        public final ApplicationStatus status;
 
         public PlayerData(String name, ResultSet resultSet) throws SQLException {
 
             this.name = name;
-            this.joined = resultSet.getTimestamp("joined");
+            this.firstJoin = resultSet.getTimestamp("first_join");
+            this.lastJoin = resultSet.getTimestamp("last_join");
             this.unlocked = resultSet.getTimestamp("unlocked");
-            this.captcha = resultSet.getString("captcha");
-            this.applicationAccepted = resultSet.getBoolean("application_accepted");
+            this.applicationProcessed = resultSet.getTimestamp("application_processed");
+            this.status = ApplicationStatus.fromString(resultSet.getString("application_status"));
+        }
+
+        public boolean isAcceptedAndLocked() {
+
+            return status == ApplicationStatus.ACCEPTED && unlocked == null;
         }
 
         public void unlock() {
 
             Database.getTable(GuestTable.class).unlockPlayer(name);
+
+            Player player = Bukkit.getPlayer(name);
+            if (player != null) {
+                player.sendMessage(ChatColor.GREEN +
+                        "Deine Bewerbung wurde soeben angenommen und du wurdest freigeschaltet!\n" +
+                        "Viel Spass auf " + ChatColor.RED + "Raid-Craft.de!");
+            }
+        }
+
+        public void updateLastJoin() {
+
+            Database.getTable(GuestTable.class).updateLastJoin(name);
+        }
+    }
+
+    public enum ApplicationStatus {
+
+        UNKNOWN,
+        ACCEPTED,
+        DENIED;
+
+        public static ApplicationStatus fromString(String status) {
+
+            return EnumUtils.getEnumFromString(ApplicationStatus.class, status);
         }
     }
 }
