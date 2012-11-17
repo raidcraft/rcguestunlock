@@ -5,6 +5,8 @@ import com.sk89q.minecraft.util.commands.Command;
 import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.minecraft.util.commands.CommandPermissions;
+import com.zachsthings.libcomponents.ComponentInformation;
+import com.zachsthings.libcomponents.Depend;
 import com.zachsthings.libcomponents.bukkit.BukkitComponent;
 import com.zachsthings.libcomponents.config.ConfigurationBase;
 import com.zachsthings.libcomponents.config.Setting;
@@ -32,6 +34,11 @@ import java.util.Random;
 /**
  * @author Silthus
  */
+@ComponentInformation(
+        friendlyName = "Guest Component",
+        desc = "Unlocks Guests when their application has been accepted."
+)
+@Depend(plugins = {"RaidCraft-API"})
 public class GuestComponent extends BukkitComponent implements Listener {
 
     private static final Random random = new Random();
