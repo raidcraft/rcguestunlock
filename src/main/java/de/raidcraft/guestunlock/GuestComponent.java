@@ -110,13 +110,15 @@ public class GuestComponent extends BukkitComponent implements Listener {
     public class Commands {
 
         @Command(
-                aliases = {"gast", "unlock", "gunlock", "gu"},
-                desc = "Schaltet Spieler nach erfolgreicher Bewerbung frei."
+                aliases = {"gast", "unlock", "gunlock", "gu", "guest"},
+                desc = "Schaltet Spieler nach erfolgreicher Bewerbung frei.",
+                usage = "<player>",
+                min = 1
         )
         @CommandPermissions("guestunlock.unlock")
         public void unlock(CommandContext args, CommandSender sender) throws CommandException {
 
-            PlayerData player = Database.getTable(GuestTable.class).getPlayer(sender.getName());
+            PlayerData player = Database.getTable(GuestTable.class).getPlayer(args.getString(0));
             if (player.unlocked != null) {
                 throw new CommandException("Der Spieler wurde bereits freigeschaltet.");
             }
