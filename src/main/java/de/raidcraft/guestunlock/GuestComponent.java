@@ -54,7 +54,16 @@ public class GuestComponent extends BukkitComponent implements Listener {
         registerCommands(Commands.class);
         CommandBook.registerEvents(this);
 
-        Database.getInstance().registerTable(GuestTable.class, new GuestTable());
+        if (Database.getInstance() == null) {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(CommandBook.inst(), new Runnable() {
+                @Override
+                public void run() {
+                    Database.getInstance().registerTable(GuestTable.class, new GuestTable());
+                }
+            }, 1L);
+        } else {
+            Database.getInstance().registerTable(GuestTable.class, new GuestTable());
+        }
         // start a task that notifies players when their application was accepted
         Bukkit.getScheduler().scheduleSyncRepeatingTask(CommandBook.inst(), new Runnable() {
             @Override
