@@ -119,6 +119,9 @@ public class GuestComponent extends BukkitComponent implements Listener {
         public void unlock(CommandContext args, CommandSender sender) throws CommandException {
 
             PlayerData player = Database.getTable(GuestTable.class).getPlayer(args.getString(0));
+            if (player == null) {
+                throw new CommandException("Es gibt keinen Spieler mit dem Namen: " + args.getString(0));
+            }
             if (player.unlocked != null) {
                 throw new CommandException("Der Spieler wurde bereits freigeschaltet.");
             }
