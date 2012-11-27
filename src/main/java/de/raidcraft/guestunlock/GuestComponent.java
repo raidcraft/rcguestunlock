@@ -80,6 +80,9 @@ public class GuestComponent extends BukkitComponent implements Listener {
                     PlayerData data = table.getPlayer(player.getName());
                     if (data.isAcceptedAndLocked()) {
                         data.unlock();
+                    } else if (player.hasPermission("raidcraft.player")
+                            && RaidCraft.getPermissions().playerInGroup(player, config.player_group)) {
+                        Database.getTable(GuestTable.class).unlockPlayer(player.getName());
                     }
                 }
             }
@@ -135,7 +138,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
                 event.getPlayer().teleport(getTutorialSpawn());
             }
             // update the players permission groups
-            event.setJoinMessage(event.getPlayer().getName() + " ist das erste Mal auf Raid-Craft!");
+            event.setJoinMessage(ChatColor.AQUA + event.getPlayer().getName() + ChatColor.YELLOW + " ist das erste Mal auf Raid-Craft!");
             for (World world : Bukkit.getWorlds()) {
                 RaidCraft.getPermissions().playerAddGroup(world, event.getPlayer().getName(), config.guest_group);
             }
