@@ -136,7 +136,8 @@ public class GuestComponent extends BukkitComponent implements Listener {
         @Setting("guest-group")public String guest_group = "guest";
         @Setting("player-group")public String player_group = "player";
         @Setting("tutorial-spawn")public Location tutorial_spawn;
-        @Setting("teleport-tutorial-on-first-join")public boolean teleport_first_join = true;
+        @Setting("teleport-on-first-join")public boolean teleport_first_join = true;
+        @Setting("teleport-on-unlock")public boolean teleport_unlock = false;
         @Setting("tutorial-range")public int tutorial_range = 500;
     }
 
@@ -375,11 +376,21 @@ public class GuestComponent extends BukkitComponent implements Listener {
 
             Database.getTable(GuestTable.class).unlockPlayer(name);
 
-            Player player = Bukkit.getPlayer(name);
+            final Player player = Bukkit.getPlayer(name);
             if (player != null) {
                 player.sendMessage(ChatColor.GREEN +
                         "Deine Bewerbung wurde soeben angenommen und du wurdest freigeschaltet!\n" +
                         "Viel Spass auf " + ChatColor.RED + "Raid-Craft.de!");
+                if (config.teleport_unlock && config.tutorial_spawn != null) {
+                    player.sendMessage(ChatColor.YELLOW + "Du wirst in Kürze in das Tutorial teleportiert.");
+                    Bukkit.getScheduler().scheduleSyncDelayedTask(CommandBook.inst(), new Runnable() {
+                        @Override
+                        public void run() {
+
+                            player.teleport(config.tutorial_spawn);
+                        }
+                    }, 60L);
+                }
             }
         }
 
