@@ -76,11 +76,9 @@ public class GuestComponent extends BukkitComponent implements Listener {
 
                 GuestTable table = Database.getTable(GuestTable.class);
                 for (Player player : Bukkit.getOnlinePlayers()) {
-                    List<PlayerData> players = table.getPlayers(player.getName());
-                    for (PlayerData data : players) {
-                        if (data.isAcceptedAndLocked()) {
-                            data.unlock();
-                        }
+                    PlayerData data = table.getPlayer(player.getName());
+                    if (data.isAcceptedAndLocked()) {
+                        data.unlock();
                     }
                 }
             }
