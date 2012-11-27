@@ -319,7 +319,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
 
             try {
                 getConnection().prepareStatement("UPDATE `" + getTableName() + "` " +
-                        "SET (unlocked=CURRENT_TIMESTAMP) WHERE player='" + player + "'").execute();
+                        "SET unlocked=CURRENT_TIMESTAMP WHERE player='" + player + "'").execute();
                 // update the players group
                 for (World world : Bukkit.getWorlds()) {
                     RaidCraft.getPermissions().playerAddGroup(world, player, config.player_group);
@@ -334,7 +334,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
 
             try {
                 getConnection().prepareStatement("UPDATE `" + getTableName() + "` " +
-                        "SET (last_join=CURRENT_TIMESTAMP) WHERE player='" + player + "')").execute();
+                        "SET last_join=CURRENT_TIMESTAMP WHERE player='" + player + "')").execute();
             } catch (SQLException e) {
                 CommandBook.logger().severe(e.getMessage());
                 e.printStackTrace();
