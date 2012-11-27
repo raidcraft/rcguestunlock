@@ -49,6 +49,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
 
     private Set<String> players = new HashSet<>();
     private LocalConfiguration config;
+    private Location tutorialSpawn = null;
 
     @Override
     public void enable() {
@@ -85,6 +86,31 @@ public class GuestComponent extends BukkitComponent implements Listener {
         }, config.task_delay * 20, config.task_delay * 20);
     }
 
+    private void setTutorialSpawn(Location location) {
+
+        config.world = location.getWorld().getName();
+        config.x = location.getX();
+        config.y = location.getY();
+        config.z = location.getZ();
+        config.pitch = location.getPitch();
+        config.yaw = location.getYaw();
+        saveConfig(config);
+        tutorialSpawn = getTutorialSpawn();
+    }
+
+    public Location getTutorialSpawn() {
+
+        if (tutorialSpawn == null) {
+            tutorialSpawn = new Location(Bukkit.getWorld(config.world),
+                    config.x,
+                    config.y,
+                    config.z,
+                    config.yaw,
+                    config.pitch);
+        }
+        return tutorialSpawn;
+    }
+
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onPlayerLogin(PlayerLoginEvent event) {
 
@@ -105,8 +131,8 @@ public class GuestComponent extends BukkitComponent implements Listener {
         // lets set the permission group guest if this is his first join
         if (players.contains(event.getPlayer().getName())) {
             // teleport the player to the tutorial
-            if (config.teleport_first_join && config.tutorial_spawn != null) {
-                event.getPlayer().teleport(config.tutorial_spawn);
+            if (config.teleport_first_join && getTutorialSpawn() != null) {
+                event.getPlayer().teleport(getTutorialSpawn());
             }
             // update the players permission groups
             event.setJoinMessage(event.getPlayer().getName() + " ist das erste Mal auf Raid-Craft!");
@@ -127,7 +153,12 @@ public class GuestComponent extends BukkitComponent implements Listener {
         @Setting("main-world")public String main_world = "world";
         @Setting("guest-group")public String guest_group = "guest";
         @Setting("player-group")public String player_group = "player";
-        @Setting("tutorial-spawn")public Location tutorial_spawn;
+        @Setting("tutorial-spawn.world")public String world;
+        @Setting("tutorial-spawn.x")public double x;
+        @Setting("tutorial-spawn.y")public double y;
+        @Setting("tutorial-spawn.z")public double z;
+        @Setting("tutorial-spawn.pitch")public float pitch;
+        @Setting("tutorial-spawn.yaw")public float yaw;
         @Setting("teleport-on-first-join")public boolean teleport_first_join = true;
         @Setting("teleport-on-unlock")public boolean teleport_unlock = false;
         @Setting("tutorial-range")public int tutorial_range = 500;
@@ -147,20 +178,20 @@ public class GuestComponent extends BukkitComponent implements Listener {
             }
 
             if (args.hasFlag('s') && sender.hasPermission("tutorial.set")) {
-                config.tutorial_spawn = ((Player) sender).getLocation();
+                setTutorialSpawn(((Player) sender).getLocation());
                 sender.sendMessage(ChatColor.GREEN + "Tutorial Spawn wurde an deine Position gesetzt.");
                 return;
             }
 
-            if (config.tutorial_spawn == null) {
+            if (getTutorialSpawn() == null) {
                 throw new CommandException("Der Tutorial Spawn ist noch nicht gesetzt.");
             }
 
             if (sender.hasPermission("raidcraft.player")
-                    && LocationUtil.getBlockDistance(((Player) sender).getLocation(), config.tutorial_spawn) > config.tutorial_range) {
+                    && LocationUtil.getBlockDistance(((Player) sender).getLocation(), getTutorialSpawn()) > config.tutorial_range) {
                 throw new CommandException("Du musst dich in " + config.tutorial_range + " Block Reichweite des Tutorials befinden.");
             } else {
-                ((Player) sender).teleport(config.tutorial_spawn);
+                ((Player) sender).teleport(getTutorialSpawn());
                 sender.sendMessage(ChatColor.GREEN + "Du wurdest zum " + ChatColor.AQUA + "Tutorial" + ChatColor.GREEN + " teleportiert.");
             }
         }
@@ -373,13 +404,13 @@ public class GuestComponent extends BukkitComponent implements Listener {
                 player.sendMessage(ChatColor.GREEN +
                         "Deine Bewerbung wurde soeben angenommen und du wurdest freigeschaltet!\n" +
                         "Viel Spass auf " + ChatColor.RED + "Raid-Craft.de!");
-                if (config.teleport_unlock && config.tutorial_spawn != null) {
+                if (config.teleport_unlock && getTutorialSpawn() != null) {
                     player.sendMessage(ChatColor.YELLOW + "Du wirst in Kürze in das Tutorial teleportiert.");
                     Bukkit.getScheduler().scheduleSyncDelayedTask(CommandBook.inst(), new Runnable() {
                         @Override
                         public void run() {
 
-                            player.teleport(config.tutorial_spawn);
+                            player.teleport(getTutorialSpawn());
                         }
                     }, 60L);
                 }
