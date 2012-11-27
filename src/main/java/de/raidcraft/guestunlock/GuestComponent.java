@@ -354,6 +354,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
                         "SET unlocked=CURRENT_TIMESTAMP WHERE player='" + player + "'").execute();
                 // update the players group
                 for (World world : Bukkit.getWorlds()) {
+                    RaidCraft.getPermissions().playerAdd(world, player, "raidcraft.player");
                     RaidCraft.getPermissions().playerAddGroup(world, player, config.player_group);
                 }
             } catch (SQLException e) {
