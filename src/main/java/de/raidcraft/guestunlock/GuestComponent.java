@@ -304,7 +304,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
             List<PlayerData> playerDatas = new ArrayList<>();
             try {
                 ResultSet resultSet = getConnection().prepareStatement(
-                        "SELECT * FROM `" + getTableName() + "` WHERE player IS LIKE '%" + name + "%' ORDER BY last_join desc").executeQuery();
+                        "SELECT * FROM `" + getTableName() + "` WHERE player LIKE '" + name + "%' ORDER BY last_join desc").executeQuery();
                 while (resultSet.next()) {
                     playerDatas.add(new PlayerData(resultSet.getString("player"), resultSet));
                 }
