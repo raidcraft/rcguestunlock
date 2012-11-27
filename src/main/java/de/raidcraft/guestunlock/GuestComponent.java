@@ -80,8 +80,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
                     PlayerData data = table.getPlayer(player.getName());
                     if (data.isAcceptedAndLocked()) {
                         data.unlock();
-                    } else if (player.hasPermission("raidcraft.player")
-                            && RaidCraft.getPermissions().playerInGroup(player, config.player_group)) {
+                    } else if (player.hasPermission("raidcraft.player")) {
                         Database.getTable(GuestTable.class).unlockPlayer(player.getName());
                     }
                 }
@@ -352,11 +351,6 @@ public class GuestComponent extends BukkitComponent implements Listener {
             try {
                 getConnection().prepareStatement("UPDATE `" + getTableName() + "` " +
                         "SET unlocked=CURRENT_TIMESTAMP WHERE player='" + player + "'").execute();
-                // update the players group
-                for (World world : Bukkit.getWorlds()) {
-                    RaidCraft.getPermissions().playerAdd(world, player, "raidcraft.player");
-                    RaidCraft.getPermissions().playerAddGroup(world, player, config.player_group);
-                }
             } catch (SQLException e) {
                 CommandBook.logger().severe(e.getMessage());
                 e.printStackTrace();
@@ -402,6 +396,12 @@ public class GuestComponent extends BukkitComponent implements Listener {
         public void unlock() {
 
             Database.getTable(GuestTable.class).unlockPlayer(name);
+
+            // update the players group
+            for (World world : Bukkit.getWorlds()) {
+                RaidCraft.getPermissions().playerAdd(world, name, "raidcraft.player");
+                RaidCraft.getPermissions().playerAddGroup(world, name, config.player_group);
+            }
 
             final Player player = Bukkit.getPlayer(name);
             if (player != null) {
