@@ -398,8 +398,8 @@ public class GuestComponent extends BukkitComponent implements Listener {
             Database.getTable(GuestTable.class).unlockPlayer(name);
 
             // update the players group
+            RaidCraft.getPermissions().playerAdd(config.main_world, name, "rcskills.levelsign");
             for (World world : Bukkit.getWorlds()) {
-                RaidCraft.getPermissions().playerAdd(world, name, "raidcraft.player");
                 RaidCraft.getPermissions().playerAddGroup(world, name, config.player_group);
             }
 
