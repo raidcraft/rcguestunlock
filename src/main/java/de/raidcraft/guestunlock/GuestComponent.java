@@ -10,26 +10,30 @@ import com.zachsthings.libcomponents.Depend;
 import com.zachsthings.libcomponents.bukkit.BukkitComponent;
 import com.zachsthings.libcomponents.config.ConfigurationBase;
 import com.zachsthings.libcomponents.config.Setting;
+import de.raidcraft.RaidCraft;
 import de.raidcraft.api.database.Database;
 import de.raidcraft.api.database.Table;
 import de.raidcraft.util.EnumUtils;
+import de.raidcraft.util.LocationUtil;
 import de.raidcraft.util.PaginatedResult;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 
+import java.io.File;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * @author Silthus
@@ -41,13 +45,19 @@ import java.util.Random;
 @Depend(plugins = {"RaidCraft-API"})
 public class GuestComponent extends BukkitComponent implements Listener {
 
-    private static final Random random = new Random();
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
 
+    private Set<String> players = new HashSet<>();
     private LocalConfiguration config;
 
     @Override
     public void enable() {
+
+        // disable if vault is not found
+        if (RaidCraft.getPermissions() == null) {
+            CommandBook.logger().severe("Could not load GuestComponent: Vault not found!");
+            return;
+        }
 
         this.config = configure(new LocalConfiguration());
 
@@ -58,6 +68,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
             Bukkit.getScheduler().scheduleSyncDelayedTask(CommandBook.inst(), new Runnable() {
                 @Override
                 public void run() {
+
                     Database.getInstance().registerTable(GuestTable.class, new GuestTable());
                 }
             }, 1L);
@@ -82,28 +93,36 @@ public class GuestComponent extends BukkitComponent implements Listener {
         }, config.task_delay * 20, config.task_delay * 20);
     }
 
-    private String generateCaptcha() {
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onPlayerLogin(PlayerLoginEvent event) {
 
-        StringBuffer captchaStringBuffer = new StringBuffer();
-        for (int i = 0; i < config.captcha_length; i++) {
-            int baseCharNumber = Math.abs(random.nextInt()) % 62;
-            int charNumber;
-            if (baseCharNumber < 26) {
-                charNumber = 65 + baseCharNumber;
-            } else if (baseCharNumber < 52){
-                charNumber = 97 + (baseCharNumber - 26);
-            } else {
-                charNumber = 48 + (baseCharNumber - 52);
-            }
-            captchaStringBuffer.append((char)charNumber);
+        Player player = event.getPlayer();
+        String name = player.getName();
+        File file = new File(Bukkit.getWorldContainer(), config.main_world + "/players/" + name + ".dat");
+        if (!file.exists()) {
+            players.add(name);
+            CommandBook.logger().info("Player " + name + " joined the server the first time.");
+        } else if (players.contains(name)) {
+            players.remove(name);
         }
-
-        return captchaStringBuffer.toString();
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
 
+        // lets set the permission group guest if this is his first join
+        if (players.contains(event.getPlayer().getName())) {
+            // teleport the player to the tutorial
+            if (config.teleport_first_join && config.tutorial_spawn != null) {
+                event.getPlayer().teleport(config.tutorial_spawn);
+            }
+            // update the players permission groups
+            event.setJoinMessage(event.getPlayer().getName() + " ist das erste Mal auf Raid-Craft!");
+            for (World world : Bukkit.getWorlds()) {
+                RaidCraft.getPermissions().playerAddGroup(world, event.getPlayer().getName(), config.guest_group);
+            }
+            players.remove(event.getPlayer().getName());
+        }
         // lets generate that player in the database
         // the database will return if player already exists
         Database.getTable(GuestTable.class).addPlayer(event.getPlayer().getName());
@@ -113,10 +132,45 @@ public class GuestComponent extends BukkitComponent implements Listener {
     public static class LocalConfiguration extends ConfigurationBase {
 
         @Setting("task-delay")public int task_delay = 60;
-        @Setting("captcha-length")public int captcha_length = 6;
+        @Setting("main-world")public String main_world = "world";
+        @Setting("guest-group")public String guest_group = "guest";
+        @Setting("player-group")public String player_group = "player";
+        @Setting("tutorial-spawn")public Location tutorial_spawn;
+        @Setting("teleport-tutorial-on-first-join")public boolean teleport_first_join = true;
+        @Setting("tutorial-range")public int tutorial_range = 500;
     }
 
     public class Commands {
+
+        @Command(
+                aliases = {"tutorial", "tut"},
+                desc = "Teleportiert den Spieler in das Tutorial",
+                flags = "s"
+        )
+        public void tutorial(CommandContext args, CommandSender sender) throws CommandException {
+
+            if (!(sender instanceof Player)) {
+                return;
+            }
+
+            if (args.hasFlag('s') && sender.hasPermission("tutorial.set")) {
+                config.tutorial_spawn = ((Player) sender).getLocation();
+                sender.sendMessage(ChatColor.GREEN + "Tutorial Spawn wurde an deine Position gesetzt.");
+                return;
+            }
+
+            if (config.tutorial_spawn == null) {
+                throw new CommandException("Der Tutorial Spawn ist noch nicht gesetzt.");
+            }
+
+            if (sender.hasPermission("raidcraft.player")
+                    && LocationUtil.getBlockDistance(((Player) sender).getLocation(), config.tutorial_spawn) > config.tutorial_range) {
+                throw new CommandException("Du musst dich in " + config.tutorial_range + " Block Reichweite des Tutorials befinden.");
+            } else {
+                ((Player) sender).teleport(config.tutorial_spawn);
+                sender.sendMessage(ChatColor.GREEN + "Du wurdest zum " + ChatColor.AQUA + "Tutorial" + ChatColor.GREEN + " teleportiert.");
+            }
+        }
 
         @Command(
                 aliases = {"gast", "unlock", "gunlock", "gu", "guest"},
@@ -191,11 +245,12 @@ public class GuestComponent extends BukkitComponent implements Listener {
                         "CREATE TABLE `" + getTableName() + "` (\n" +
                                 "`id` INT NOT NULL AUTO_INCREMENT ,\n" +
                                 "`player` VARCHAR( 32 ) NOT NULL ,\n" +
-                                "`application_status` VARCHAR( 64 ) NOT NULL ,\n" +
-                                "`application_processed` TIMESTAMP NULL , \n" +
-                                "`unlocked` TIMESTAMP NULL , \n" +
+                                "`application_status` VARCHAR( 64 ) NOT NULL DEFAULT 'UNKNOWN' ,\n" +
+                                "`application_processed` TIMESTAMP NULL DEFAULT NULL , \n" +
+                                "`unlocked` TIMESTAMP NULL DEFAULT NULL , \n" +
                                 "`first_join` TIMESTAMP NOT NULL , \n" +
                                 "`last_join` TIMESTAMP NOT NULL , \n" +
+                                "`forum_post_url` VARCHAR ( 256 ) NULL DEFAULT NULL , \n" +
                                 "PRIMARY KEY ( `id` )\n" +
                                 ")").execute();
             } catch (SQLException e) {
@@ -270,6 +325,10 @@ public class GuestComponent extends BukkitComponent implements Listener {
             try {
                 getConnection().prepareStatement("UPDATE `" + getTableName() + "` " +
                         "SET (unlocked=CURRENT_TIMESTAMP) WHERE player='" + player + "'").execute();
+                // update the players group
+                for (World world : Bukkit.getWorlds()) {
+                    RaidCraft.getPermissions().playerAddGroup(world, player, config.player_group);
+                }
             } catch (SQLException e) {
                 CommandBook.logger().severe(e.getMessage());
                 e.printStackTrace();
