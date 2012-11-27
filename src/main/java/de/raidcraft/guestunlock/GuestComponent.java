@@ -363,7 +363,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
 
             try {
                 getConnection().prepareStatement("UPDATE `" + getTableName() + "` " +
-                        "SET last_join=CURRENT_TIMESTAMP WHERE player='" + player + "')").execute();
+                        "SET last_join=CURRENT_TIMESTAMP WHERE player='" + player + "'").execute();
             } catch (SQLException e) {
                 CommandBook.logger().severe(e.getMessage());
                 e.printStackTrace();
