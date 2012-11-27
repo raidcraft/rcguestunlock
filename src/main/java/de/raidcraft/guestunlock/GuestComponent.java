@@ -53,12 +53,6 @@ public class GuestComponent extends BukkitComponent implements Listener {
     @Override
     public void enable() {
 
-        // disable if vault is not found
-        if (RaidCraft.getPermissions() == null) {
-            CommandBook.logger().severe("Could not load GuestComponent: Vault not found!");
-            return;
-        }
-
         this.config = configure(new LocalConfiguration());
 
         registerCommands(Commands.class);
