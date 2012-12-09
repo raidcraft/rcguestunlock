@@ -44,16 +44,16 @@ import java.util.*;
 )
 @Depend(plugins = {"RaidCraft-API"})
 public class GuestComponent extends BukkitComponent implements Listener {
-
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+    public static GuestComponent INST;
+    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
 
     private Set<String> players = new HashSet<>();
-    private LocalConfiguration config;
+    public LocalConfiguration config;
     private Location tutorialSpawn = null;
 
     @Override
     public void enable() {
-
+        INST = this;
         this.config = configure(new LocalConfiguration());
 
         registerCommands(Commands.class);
@@ -88,7 +88,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
         }, config.task_delay * 20, config.task_delay * 20);
     }
 
-    private void setTutorialSpawn(Location location) {
+    public void setTutorialSpawn(Location location) {
 
         config.world = location.getWorld().getName();
         config.x = location.getX();
@@ -164,267 +164,6 @@ public class GuestComponent extends BukkitComponent implements Listener {
         @Setting("teleport-on-first-join")public boolean teleport_first_join = true;
         @Setting("teleport-on-unlock")public boolean teleport_unlock = false;
         @Setting("tutorial-range")public int tutorial_range = 500;
-    }
-
-    public class Commands {
-
-        @Command(
-                aliases = {"tutorial", "tut"},
-                desc = "Teleportiert den Spieler in das Tutorial",
-                flags = "s"
-        )
-        public void tutorial(CommandContext args, CommandSender sender) throws CommandException {
-
-            if (!(sender instanceof Player)) {
-                return;
-            }
-
-            if (args.hasFlag('s') && sender.hasPermission("tutorial.set")) {
-                setTutorialSpawn(((Player) sender).getLocation());
-                sender.sendMessage(ChatColor.GREEN + "Tutorial Spawn wurde an deine Position gesetzt.");
-                return;
-            }
-
-            if (getTutorialSpawn() == null) {
-                throw new CommandException("Der Tutorial Spawn ist noch nicht gesetzt.");
-            }
-
-            if (sender.hasPermission("raidcraft.player")
-                    && LocationUtil.getBlockDistance(((Player) sender).getLocation(), getTutorialSpawn()) > config.tutorial_range) {
-                throw new CommandException("Du musst dich in " + config.tutorial_range + " Block Reichweite des Tutorials befinden.");
-            } else {
-                ((Player) sender).teleport(getTutorialSpawn());
-                sender.sendMessage(ChatColor.GREEN + "Du wurdest zum " + ChatColor.AQUA + "Tutorial" + ChatColor.GREEN + " teleportiert.");
-            }
-        }
-
-        @Command(
-                aliases = {"gast", "unlock", "gunlock", "gu", "guest"},
-                desc = "Schaltet Spieler nach erfolgreicher Bewerbung frei.",
-                usage = "<player>",
-                min = 1
-        )
-        @CommandPermissions("guestunlock.unlock")
-        public void unlock(CommandContext args, CommandSender sender) throws CommandException {
-
-            PlayerData player = Database.getTable(GuestTable.class).getPlayer(args.getString(0));
-            if (player == null) {
-                throw new CommandException("Es gibt keinen Spieler mit dem Namen: " + args.getString(0));
-            }
-            if (player.unlocked != null) {
-                throw new CommandException("Der Spieler wurde bereits freigeschaltet.");
-            }
-            // lets check the captcha CaSE_SEnsteTive
-            player.unlock();
-        }
-
-        @Command(
-                aliases = {"guestlist", "gl"},
-                desc = "Lists guests and their unlock and join dates.",
-                usage = "<partial player name>",
-                min = 1,
-                flags = "p:"
-        )
-        @CommandPermissions("guestunlock.list")
-        public void list(CommandContext args, CommandSender sender) throws CommandException {
-
-            new PaginatedResult<PlayerData>("Player  -  First Join  -  Unlocked") {
-
-                @Override
-                public String format(PlayerData playerData) {
-
-                    StringBuilder sb = new StringBuilder();
-                    switch (playerData.status) {
-
-                        case ACCEPTED:
-                            sb.append(ChatColor.GREEN);
-                            break;
-                        case DENIED:
-                            sb.append(ChatColor.RED);
-                            break;
-                        default:
-                            sb.append(ChatColor.AQUA);
-                            break;
-                    }
-                    sb.append(playerData.name);
-                    sb.append(ChatColor.GRAY).append(ChatColor.ITALIC).append(" - ");
-                    sb.append(DATE_FORMAT.format(playerData.firstJoin)).append(" - ");
-                    sb.append((playerData.unlocked == null ? ChatColor.RED + "Not Unlocked" : DATE_FORMAT.format(playerData.unlocked)));
-                    return sb.toString();
-                }
-            }.display(sender, Database.getTable(GuestTable.class).getPlayers(args.getString(0)), args.getFlagInteger('p', 1));
-        }
-    }
-
-    public class GuestTable extends Table {
-
-        public GuestTable() {
-
-            super("guests", "raidcraft_");
-        }
-
-        @Override
-        public void createTable() {
-
-            try {
-                getConnection().prepareStatement(
-                        "CREATE TABLE `" + getTableName() + "` (\n" +
-                                "`id` INT NOT NULL AUTO_INCREMENT ,\n" +
-                                "`player` VARCHAR( 32 ) NOT NULL ,\n" +
-                                "`application_status` VARCHAR( 64 ) NOT NULL DEFAULT 'UNKNOWN' ,\n" +
-                                "`application_processed` TIMESTAMP NULL DEFAULT NULL , \n" +
-                                "`unlocked` TIMESTAMP NULL DEFAULT NULL , \n" +
-                                "`first_join` TIMESTAMP NOT NULL , \n" +
-                                "`last_join` TIMESTAMP NOT NULL , \n" +
-                                "`forum_post_url` VARCHAR ( 256 ) NULL DEFAULT NULL , \n" +
-                                "PRIMARY KEY ( `id` )\n" +
-                                ")").execute();
-            } catch (SQLException e) {
-                CommandBook.logger().severe(e.getMessage());
-                e.printStackTrace();
-            }
-        }
-
-        public boolean exists(String player) {
-
-            try {
-                ResultSet resultSet = getConnection().prepareStatement(
-                        "SELECT COUNT(*) as count FROM `" + getTableName() + "` WHERE player='" + player + "'").executeQuery();
-                if (resultSet.next()) {
-                    return resultSet.getInt("count") > 0;
-                }
-            } catch (SQLException e) {
-                CommandBook.logger().severe(e.getMessage());
-                e.printStackTrace();
-            }
-            return false;
-        }
-
-        public void addPlayer(String name) {
-
-            if (exists(name)) {
-                return;
-            }
-            try {
-                getConnection().prepareStatement("INSERT INTO `" + getTableName() + "` " +
-                        "(player, first_join, last_join, application_status) VALUES " +
-                        "('" + name + "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'UNKNOWN')").execute();
-            } catch (SQLException e) {
-                CommandBook.logger().severe(e.getMessage());
-                e.printStackTrace();
-            }
-        }
-
-        public PlayerData getPlayer(String name) {
-
-            try {
-                ResultSet resultSet = getConnection().prepareStatement(
-                        "SELECT * FROM `" + getTableName() + "` WHERE player='" + name + "'").executeQuery();
-                while (resultSet.next()) {
-                    return new PlayerData(resultSet.getString("player"), resultSet);
-                }
-            } catch (SQLException e) {
-                CommandBook.logger().severe(e.getMessage());
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-        public List<PlayerData> getPlayers(String name) {
-
-            List<PlayerData> playerDatas = new ArrayList<>();
-            try {
-                ResultSet resultSet = getConnection().prepareStatement(
-                        "SELECT * FROM `" + getTableName() + "` WHERE player LIKE '" + name + "%' ORDER BY last_join desc").executeQuery();
-                while (resultSet.next()) {
-                    playerDatas.add(new PlayerData(resultSet.getString("player"), resultSet));
-                }
-            } catch (SQLException e) {
-                CommandBook.logger().severe(e.getMessage());
-                e.printStackTrace();
-            }
-            return playerDatas;
-        }
-
-        public void unlockPlayer(String player) {
-
-            try {
-                getConnection().prepareStatement("UPDATE `" + getTableName() + "` " +
-                        "SET unlocked=CURRENT_TIMESTAMP WHERE player='" + player + "'").execute();
-            } catch (SQLException e) {
-                CommandBook.logger().severe(e.getMessage());
-                e.printStackTrace();
-            }
-        }
-
-        public void updateLastJoin(String player) {
-
-            try {
-                getConnection().prepareStatement("UPDATE `" + getTableName() + "` " +
-                        "SET last_join=CURRENT_TIMESTAMP WHERE player='" + player + "'").execute();
-            } catch (SQLException e) {
-                CommandBook.logger().severe(e.getMessage());
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public class PlayerData {
-
-        public final String name;
-        public final Timestamp firstJoin;
-        public final Timestamp lastJoin;
-        public final Timestamp unlocked;
-        public final Timestamp applicationProcessed;
-        public final ApplicationStatus status;
-
-        public PlayerData(String name, ResultSet resultSet) throws SQLException {
-
-            this.name = name;
-            this.firstJoin = resultSet.getTimestamp("first_join");
-            this.lastJoin = resultSet.getTimestamp("last_join");
-            this.unlocked = resultSet.getTimestamp("unlocked");
-            this.applicationProcessed = resultSet.getTimestamp("application_processed");
-            this.status = ApplicationStatus.fromString(resultSet.getString("application_status"));
-        }
-
-        public boolean isAcceptedAndLocked() {
-
-            return status == ApplicationStatus.ACCEPTED && unlocked == null;
-        }
-
-        public void unlock() {
-
-            Database.getTable(GuestTable.class).unlockPlayer(name);
-
-            // update the players group
-            RaidCraft.getPermissions().playerAdd(config.main_world, name, "rcskills.levelsign");
-            for (World world : Bukkit.getWorlds()) {
-                RaidCraft.getPermissions().playerAddGroup(world, name, config.player_group);
-            }
-
-            final Player player = Bukkit.getPlayer(name);
-            if (player != null) {
-                player.sendMessage(ChatColor.GREEN +
-                        "Deine Bewerbung wurde soeben angenommen und du wurdest freigeschaltet!\n" +
-                        "Viel Spass auf " + ChatColor.RED + "Raid-Craft.de!");
-                if (config.teleport_unlock && getTutorialSpawn() != null) {
-                    player.sendMessage(ChatColor.YELLOW + "Du wirst in Kürze in das Tutorial teleportiert.");
-                    Bukkit.getScheduler().scheduleSyncDelayedTask(CommandBook.inst(), new Runnable() {
-                        @Override
-                        public void run() {
-
-                            player.teleport(getTutorialSpawn());
-                        }
-                    }, 60L);
-                }
-            }
-        }
-
-        public void updateLastJoin() {
-
-            Database.getTable(GuestTable.class).updateLastJoin(name);
-        }
     }
 
     public enum ApplicationStatus {
