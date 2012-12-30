@@ -11,6 +11,7 @@ import com.zachsthings.libcomponents.bukkit.BukkitComponent;
 import com.zachsthings.libcomponents.config.ConfigurationBase;
 import com.zachsthings.libcomponents.config.Setting;
 import de.raidcraft.RaidCraft;
+import de.raidcraft.RaidCraftPlugin;
 import de.raidcraft.api.database.Database;
 import de.raidcraft.api.database.Table;
 import de.raidcraft.util.EnumUtils;
@@ -58,18 +59,8 @@ public class GuestComponent extends BukkitComponent implements Listener {
 
         registerCommands(Commands.class);
         CommandBook.registerEvents(this);
+        new Database(RaidCraft.getComponent(RaidCraftPlugin.class)).registerTable(GuestTable.class, new GuestTable());
 
-        if (Database.getInstance() == null) {
-            Bukkit.getScheduler().scheduleSyncDelayedTask(CommandBook.inst(), new Runnable() {
-                @Override
-                public void run() {
-
-                    Database.getInstance().registerTable(GuestTable.class, new GuestTable());
-                }
-            }, 1L);
-        } else {
-            Database.getInstance().registerTable(GuestTable.class, new GuestTable());
-        }
         // start a task that notifies players when their application was accepted
         Bukkit.getScheduler().scheduleSyncRepeatingTask(CommandBook.inst(), new Runnable() {
             @Override
