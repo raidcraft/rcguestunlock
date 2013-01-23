@@ -34,7 +34,7 @@
     <parent>
         <groupId>de.raidcraft</groupId>
         <artifactId>masterpom</artifactId>
-        <version>2.0</version>
+        <version>2.3-SNAPSHOT</version>
     </parent>
 
     <dependencies>
