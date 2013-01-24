@@ -1,0 +1,7 @@
+main: de.raidcraft.guestunlock.GuestComponent
+name: Guestunlock
+version: ${project.version}#${build.number}
+description: Guestunlock and tutorial functionality
+author: Silthus
+website: http://www.raid-craft.de
+depend: [RaidCraft-API]

@@ -1,27 +1,20 @@
 package de.raidcraft.guestunlock;
 
 import com.sk89q.commandbook.CommandBook;
-import com.sk89q.minecraft.util.commands.Command;
-import com.sk89q.minecraft.util.commands.CommandContext;
-import com.sk89q.minecraft.util.commands.CommandException;
-import com.sk89q.minecraft.util.commands.CommandPermissions;
 import com.zachsthings.libcomponents.ComponentInformation;
 import com.zachsthings.libcomponents.Depend;
-import com.zachsthings.libcomponents.bukkit.BukkitComponent;
-import com.zachsthings.libcomponents.config.ConfigurationBase;
 import com.zachsthings.libcomponents.config.Setting;
 import de.raidcraft.RaidCraft;
 import de.raidcraft.RaidCraftPlugin;
+import de.raidcraft.api.BasePlugin;
+import de.raidcraft.api.Component;
+import de.raidcraft.api.config.ConfigurationBase;
 import de.raidcraft.api.database.Database;
-import de.raidcraft.api.database.Table;
 import de.raidcraft.util.EnumUtils;
-import de.raidcraft.util.LocationUtil;
-import de.raidcraft.util.PaginatedResult;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -30,11 +23,9 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 
 import java.io.File;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Silthus
@@ -44,7 +35,7 @@ import java.util.*;
         desc = "Unlocks Guests when their application has been accepted."
 )
 @Depend(plugins = {"RaidCraft-API"})
-public class GuestComponent extends BukkitComponent implements Listener {
+public class GuestComponent extends BasePlugin implements Component, Listener {
     public static GuestComponent INST;
     public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
 
@@ -55,7 +46,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
     @Override
     public void enable() {
         INST = this;
-        this.config = configure(new LocalConfiguration());
+        this.config = configure(new LocalConfiguration(this));
 
         registerCommands(Commands.class);
         CommandBook.registerEvents(this);
@@ -79,6 +70,11 @@ public class GuestComponent extends BukkitComponent implements Listener {
         }, config.task_delay * 20, config.task_delay * 20);
     }
 
+    @Override
+    public void disable() {
+        //TODO: implement
+    }
+
     public void setTutorialSpawn(Location location) {
 
         config.world = location.getWorld().getName();
@@ -87,7 +83,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
         config.z = location.getZ();
         config.pitch = location.getPitch();
         config.yaw = location.getYaw();
-        saveConfig(config);
+        config.save();
         tutorialSpawn = getTutorialSpawn();
     }
 
@@ -140,7 +136,7 @@ public class GuestComponent extends BukkitComponent implements Listener {
         Database.getTable(GuestTable.class).getPlayer(event.getPlayer().getName()).updateLastJoin();
     }
 
-    public static class LocalConfiguration extends ConfigurationBase {
+    public static class LocalConfiguration extends ConfigurationBase<GuestComponent> {
 
         @Setting("task-delay")public int task_delay = 60;
         @Setting("main-world")public String main_world = "world";
@@ -155,6 +151,11 @@ public class GuestComponent extends BukkitComponent implements Listener {
         @Setting("teleport-on-first-join")public boolean teleport_first_join = true;
         @Setting("teleport-on-unlock")public boolean teleport_unlock = false;
         @Setting("tutorial-range")public int tutorial_range = 500;
+
+        public LocalConfiguration(GuestComponent plugin) {
+
+            super(plugin, "config.yml");
+        }
     }
 
     public enum ApplicationStatus {
