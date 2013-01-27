@@ -87,12 +87,12 @@ public class GuestComponent extends BasePlugin implements Component, Listener {
         config.z = location.getZ();
         config.pitch = location.getPitch();
         config.yaw = location.getYaw();
-        config.set("world", location.getWorld().getName());
-        config.set("x", location.getX());
-        config.set("y", location.getY());
-        config.set("z", location.getZ());
-        config.set("pitch", location.getPitch());
-        config.set("yaw", location.getYaw());
+        config.set("tutorial-spawn.world", location.getWorld().getName());
+        config.set("tutorial-spawn.x", location.getX());
+        config.set("tutorial-spawn.y", location.getY());
+        config.set("tutorial-spawn.z", location.getZ());
+        config.set("tutorial-spawn.pitch", location.getPitch());
+        config.set("tutorial-spawn.yaw", location.getYaw());
         config.save();
         tutorialSpawn = getTutorialSpawn();
     }
@@ -152,12 +152,12 @@ public class GuestComponent extends BasePlugin implements Component, Listener {
         @Setting("main-world")public String main_world = "world";
         @Setting("guest-group")public String guest_group = "guest";
         @Setting("player-group")public String player_group = "player";
-        @Setting("tutorial-spawn.world")public String world;
-        @Setting("tutorial-spawn.x")public double x;
-        @Setting("tutorial-spawn.y")public double y;
-        @Setting("tutorial-spawn.z")public double z;
-        @Setting("tutorial-spawn.pitch")public float pitch;
-        @Setting("tutorial-spawn.yaw")public float yaw;
+        @Setting("tutorial-spawn.world")public String world = "world";
+        @Setting("tutorial-spawn.x")public double x = 37;
+        @Setting("tutorial-spawn.y")public double y = 226;
+        @Setting("tutorial-spawn.z")public double z = 58;
+        @Setting("tutorial-spawn.pitch")public float pitch = 0F;
+        @Setting("tutorial-spawn.yaw")public float yaw = 178.34F;
         @Setting("teleport-on-first-join")public boolean teleport_first_join = true;
         @Setting("teleport-on-unlock")public boolean teleport_unlock = false;
         @Setting("tutorial-range")public int tutorial_range = 500;
