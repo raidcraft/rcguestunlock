@@ -72,11 +72,6 @@ public class GuestComponent extends BasePlugin implements Component, Listener {
 
     @Override
     public void disable() {
-        //TODO: implement
-    }
-
-    public PlayerData getPlayerData(String player) {
-        return Database.getTable(GuestTable.class).getPlayer(player);
     }
 
     public void setTutorialSpawn(Location location) {
