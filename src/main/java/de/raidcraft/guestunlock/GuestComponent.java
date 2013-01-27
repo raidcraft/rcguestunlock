@@ -75,6 +75,10 @@ public class GuestComponent extends BasePlugin implements Component, Listener {
         //TODO: implement
     }
 
+    public boolean playerExists(String player) {
+        return Database.getTable(GuestTable.class).exists(player);
+    }
+
     public void setTutorialSpawn(Location location) {
 
         config.world = location.getWorld().getName();
@@ -83,6 +87,12 @@ public class GuestComponent extends BasePlugin implements Component, Listener {
         config.z = location.getZ();
         config.pitch = location.getPitch();
         config.yaw = location.getYaw();
+        config.set("world", location.getWorld().getName());
+        config.set("x", location.getX());
+        config.set("y", location.getY());
+        config.set("z", location.getZ());
+        config.set("pitch", location.getPitch());
+        config.set("yaw", location.getYaw());
         config.save();
         tutorialSpawn = getTutorialSpawn();
     }
