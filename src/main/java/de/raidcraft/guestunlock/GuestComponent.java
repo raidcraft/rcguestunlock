@@ -1,8 +1,6 @@
 package de.raidcraft.guestunlock;
 
 import com.sk89q.commandbook.CommandBook;
-import com.zachsthings.libcomponents.ComponentInformation;
-import com.zachsthings.libcomponents.Depend;
 import de.raidcraft.RaidCraft;
 import de.raidcraft.RaidCraftPlugin;
 import de.raidcraft.api.BasePlugin;
@@ -30,11 +28,6 @@ import java.util.Set;
 /**
  * @author Silthus
  */
-@ComponentInformation(
-        friendlyName = "Guest Component",
-        desc = "Unlocks Guests when their application has been accepted."
-)
-@Depend(plugins = {"RaidCraft-API"})
 public class GuestComponent extends BasePlugin implements Component, Listener {
     public static GuestComponent INST;
     public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
@@ -48,8 +41,8 @@ public class GuestComponent extends BasePlugin implements Component, Listener {
         INST = this;
         this.config = configure(new LocalConfiguration(this));
 
+        registerEvents(this);
         registerCommands(Commands.class);
-        CommandBook.registerEvents(this);
         new Database(RaidCraft.getComponent(RaidCraftPlugin.class)).registerTable(GuestTable.class, new GuestTable());
 
         // start a task that notifies players when their application was accepted
