@@ -37,6 +37,13 @@
         <version>2.4-SNAPSHOT</version>
     </parent>
 
+    <repositories>
+        <repository>
+            <id>raidcraft</id>
+            <url>http://nexus.raid-craft.de/content/groups/public/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>de.raidcraft</groupId>
