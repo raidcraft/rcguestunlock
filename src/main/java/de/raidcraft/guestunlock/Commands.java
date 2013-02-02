@@ -19,7 +19,7 @@ import org.bukkit.entity.Player;
  */
 public class Commands {
 
-    public Commands(GuestComponent module) {
+    public Commands(GuestUnlockPlugin module) {
 
     }
 
@@ -35,29 +35,29 @@ public class Commands {
         }
 
         if (args.hasFlag('s') && sender.hasPermission("tutorial.set")) {
-            GuestComponent.INST.setTutorialSpawn(((Player) sender).getLocation());
+            GuestUnlockPlugin.INST.setTutorialSpawn(((Player) sender).getLocation());
             sender.sendMessage(ChatColor.GREEN + "Tutorial Spawn wurde an deine Position gesetzt.");
             return;
         }
 
-        if (GuestComponent.INST.getTutorialSpawn() == null) {
+        if (GuestUnlockPlugin.INST.getTutorialSpawn() == null) {
             throw new CommandException("Der Tutorial Spawn ist noch nicht gesetzt.");
         }
-        
-        if(args.argsLength() > 0 && sender.hasPermission("tutorial.tp.other")) {
+
+        if (args.argsLength() > 0 && sender.hasPermission("tutorial.tp.other")) {
             Player targetPlayer = Bukkit.getPlayer(args.getString(0));
-            if(targetPlayer == null) {
+            if (targetPlayer == null) {
                 throw new CommandException("Der gewählte Spieler wurde nicht gefunden!");
             }
-            targetPlayer.teleport(GuestComponent.INST.getTutorialSpawn());
+            targetPlayer.teleport(GuestUnlockPlugin.INST.getTutorialSpawn());
             sender.sendMessage(ChatColor.GREEN + "Du wurdest von einem Moderator zum " + ChatColor.AQUA + "Tutorial" + ChatColor.GREEN + " teleportiert.");
         }
 
         if (sender.hasPermission("raidcraft.player")
-                && LocationUtil.getBlockDistance(((Player) sender).getLocation(), GuestComponent.INST.getTutorialSpawn()) > GuestComponent.INST.config.tutorial_range) {
-            throw new CommandException("Du musst dich in " + GuestComponent.INST.config.tutorial_range + " Block Reichweite des Tutorials befinden.");
+                && LocationUtil.getBlockDistance(((Player) sender).getLocation(), GuestUnlockPlugin.INST.getTutorialSpawn()) > GuestUnlockPlugin.INST.config.tutorial_range) {
+            throw new CommandException("Du musst dich in " + GuestUnlockPlugin.INST.config.tutorial_range + " Block Reichweite des Tutorials befinden.");
         } else {
-            ((Player) sender).teleport(GuestComponent.INST.getTutorialSpawn());
+            ((Player) sender).teleport(GuestUnlockPlugin.INST.getTutorialSpawn());
             sender.sendMessage(ChatColor.GREEN + "Du wurdest zum " + ChatColor.AQUA + "Tutorial" + ChatColor.GREEN + " teleportiert.");
         }
     }
@@ -112,8 +112,8 @@ public class Commands {
                 }
                 sb.append(playerData.name);
                 sb.append(ChatColor.GRAY).append(ChatColor.ITALIC).append(" - ");
-                sb.append(GuestComponent.DATE_FORMAT.format(playerData.firstJoin)).append(" - ");
-                sb.append((playerData.unlocked == null ? ChatColor.RED + "Not Unlocked" : GuestComponent.DATE_FORMAT.format(playerData.unlocked)));
+                sb.append(GuestUnlockPlugin.DATE_FORMAT.format(playerData.firstJoin)).append(" - ");
+                sb.append((playerData.unlocked == null ? ChatColor.RED + "Not Unlocked" : GuestUnlockPlugin.DATE_FORMAT.format(playerData.unlocked)));
                 return sb.toString();
             }
         }.display(sender, Database.getTable(GuestTable.class).getPlayers(args.getString(0)), args.getFlagInteger('p', 1));

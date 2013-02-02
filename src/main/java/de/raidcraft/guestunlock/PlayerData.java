@@ -24,7 +24,7 @@ public class PlayerData {
     public final Timestamp lastJoin;
     public final Timestamp unlocked;
     public final Timestamp applicationProcessed;
-    public final GuestComponent.ApplicationStatus status;
+    public final GuestUnlockPlugin.ApplicationStatus status;
 
     public PlayerData(String name, ResultSet resultSet) throws SQLException {
 
@@ -33,12 +33,12 @@ public class PlayerData {
         this.lastJoin = resultSet.getTimestamp("last_join");
         this.unlocked = resultSet.getTimestamp("unlocked");
         this.applicationProcessed = resultSet.getTimestamp("application_processed");
-        this.status = GuestComponent.ApplicationStatus.fromString(resultSet.getString("application_status"));
+        this.status = GuestUnlockPlugin.ApplicationStatus.fromString(resultSet.getString("application_status"));
     }
 
     public boolean isAcceptedAndLocked() {
 
-        return status == GuestComponent.ApplicationStatus.ACCEPTED && unlocked == null;
+        return status == GuestUnlockPlugin.ApplicationStatus.ACCEPTED && unlocked == null;
     }
 
     public void unlock() {
@@ -46,9 +46,9 @@ public class PlayerData {
         Database.getTable(GuestTable.class).unlockPlayer(name);
 
         // update the players group
-        RaidCraft.getPermissions().playerAdd(GuestComponent.INST.config.main_world, name, "rcskills.levelsign");
+        RaidCraft.getPermissions().playerAdd(GuestUnlockPlugin.INST.config.main_world, name, "rcskills.levelsign");
         for (World world : Bukkit.getWorlds()) {
-            RaidCraft.getPermissions().playerAddGroup(world, name, GuestComponent.INST.config.player_group);
+            RaidCraft.getPermissions().playerAddGroup(world, name, GuestUnlockPlugin.INST.config.player_group);
         }
 
         final Player player = Bukkit.getPlayer(name);
@@ -56,13 +56,13 @@ public class PlayerData {
             player.sendMessage(ChatColor.GREEN +
                     "Deine Bewerbung wurde soeben angenommen und du wurdest freigeschaltet!\n" +
                     "Viel Spass auf " + ChatColor.RED + "Raid-Craft.de!");
-            if (GuestComponent.INST.config.teleport_unlock && GuestComponent.INST.getTutorialSpawn() != null) {
+            if (GuestUnlockPlugin.INST.config.teleport_unlock && GuestUnlockPlugin.INST.getTutorialSpawn() != null) {
                 player.sendMessage(ChatColor.YELLOW + "Du wirst in Kürze in das Tutorial teleportiert.");
                 Bukkit.getScheduler().scheduleSyncDelayedTask(CommandBook.inst(), new Runnable() {
                     @Override
                     public void run() {
 
-                        player.teleport(GuestComponent.INST.getTutorialSpawn());
+                        player.teleport(GuestUnlockPlugin.INST.getTutorialSpawn());
                     }
                 }, 60L);
             }

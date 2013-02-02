@@ -2,9 +2,7 @@ package de.raidcraft.guestunlock;
 
 import com.sk89q.commandbook.CommandBook;
 import de.raidcraft.RaidCraft;
-import de.raidcraft.RaidCraftPlugin;
 import de.raidcraft.api.BasePlugin;
-import de.raidcraft.api.Component;
 import de.raidcraft.api.config.ConfigurationBase;
 import de.raidcraft.api.config.Setting;
 import de.raidcraft.api.database.Database;
@@ -28,8 +26,8 @@ import java.util.Set;
 /**
  * @author Silthus
  */
-public class GuestComponent extends BasePlugin implements Component, Listener {
-    public static GuestComponent INST;
+public class GuestUnlockPlugin extends BasePlugin implements Listener {
+
     public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
 
     private Set<String> players = new HashSet<>();
@@ -38,12 +36,12 @@ public class GuestComponent extends BasePlugin implements Component, Listener {
 
     @Override
     public void enable() {
-        INST = this;
+
         this.config = configure(new LocalConfiguration(this));
 
         registerEvents(this);
         registerCommands(Commands.class);
-        new Database(RaidCraft.getComponent(RaidCraftPlugin.class)).registerTable(GuestTable.class, new GuestTable());
+        registerTable(GuestTable.class, new GuestTable());
 
         // start a task that notifies players when their application was accepted
         Bukkit.getScheduler().scheduleSyncRepeatingTask(CommandBook.inst(), new Runnable() {
@@ -65,6 +63,7 @@ public class GuestComponent extends BasePlugin implements Component, Listener {
 
     @Override
     public void disable() {
+
     }
 
     public void setTutorialSpawn(Location location) {
@@ -134,23 +133,36 @@ public class GuestComponent extends BasePlugin implements Component, Listener {
         Database.getTable(GuestTable.class).getPlayer(event.getPlayer().getName()).updateLastJoin();
     }
 
-    public static class LocalConfiguration extends ConfigurationBase<GuestComponent> {
+    public static class LocalConfiguration extends ConfigurationBase<GuestUnlockPlugin> {
 
-        @Setting("task-delay")public int task_delay = 60;
-        @Setting("main-world")public String main_world = "world";
-        @Setting("guest-group")public String guest_group = "guest";
-        @Setting("player-group")public String player_group = "player";
-        @Setting("tutorial-spawn.world")public String world = "world";
-        @Setting("tutorial-spawn.x")public double x = 37;
-        @Setting("tutorial-spawn.y")public double y = 226;
-        @Setting("tutorial-spawn.z")public double z = 58;
-        @Setting("tutorial-spawn.pitch")public float pitch = 0F;
-        @Setting("tutorial-spawn.yaw")public float yaw = 178.34F;
-        @Setting("teleport-on-first-join")public boolean teleport_first_join = true;
-        @Setting("teleport-on-unlock")public boolean teleport_unlock = false;
-        @Setting("tutorial-range")public int tutorial_range = 500;
+        @Setting("task-delay")
+        public int task_delay = 60;
+        @Setting("main-world")
+        public String main_world = "world";
+        @Setting("guest-group")
+        public String guest_group = "guest";
+        @Setting("player-group")
+        public String player_group = "player";
+        @Setting("tutorial-spawn.world")
+        public String world = "world";
+        @Setting("tutorial-spawn.x")
+        public double x = 37;
+        @Setting("tutorial-spawn.y")
+        public double y = 226;
+        @Setting("tutorial-spawn.z")
+        public double z = 58;
+        @Setting("tutorial-spawn.pitch")
+        public float pitch = 0F;
+        @Setting("tutorial-spawn.yaw")
+        public float yaw = 178.34F;
+        @Setting("teleport-on-first-join")
+        public boolean teleport_first_join = true;
+        @Setting("teleport-on-unlock")
+        public boolean teleport_unlock = false;
+        @Setting("tutorial-range")
+        public int tutorial_range = 500;
 
-        public LocalConfiguration(GuestComponent plugin) {
+        public LocalConfiguration(GuestUnlockPlugin plugin) {
 
             super(plugin, "config.yml");
         }
