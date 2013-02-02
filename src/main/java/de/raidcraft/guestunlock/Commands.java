@@ -4,6 +4,7 @@ import com.sk89q.minecraft.util.commands.Command;
 import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.minecraft.util.commands.CommandPermissions;
+import de.raidcraft.RaidCraft;
 import de.raidcraft.api.database.Database;
 import de.raidcraft.util.LocationUtil;
 import de.raidcraft.util.PaginatedResult;
@@ -34,13 +35,15 @@ public class Commands {
             return;
         }
 
+        GuestUnlockPlugin plugin = RaidCraft.getComponent(GuestUnlockPlugin.class);
+
         if (args.hasFlag('s') && sender.hasPermission("tutorial.set")) {
-            GuestUnlockPlugin.INST.setTutorialSpawn(((Player) sender).getLocation());
+            plugin.setTutorialSpawn(((Player) sender).getLocation());
             sender.sendMessage(ChatColor.GREEN + "Tutorial Spawn wurde an deine Position gesetzt.");
             return;
         }
 
-        if (GuestUnlockPlugin.INST.getTutorialSpawn() == null) {
+        if (plugin.getTutorialSpawn() == null) {
             throw new CommandException("Der Tutorial Spawn ist noch nicht gesetzt.");
         }
 
@@ -49,15 +52,15 @@ public class Commands {
             if (targetPlayer == null) {
                 throw new CommandException("Der gewählte Spieler wurde nicht gefunden!");
             }
-            targetPlayer.teleport(GuestUnlockPlugin.INST.getTutorialSpawn());
+            targetPlayer.teleport(plugin.getTutorialSpawn());
             sender.sendMessage(ChatColor.GREEN + "Du wurdest von einem Moderator zum " + ChatColor.AQUA + "Tutorial" + ChatColor.GREEN + " teleportiert.");
         }
 
         if (sender.hasPermission("raidcraft.player")
-                && LocationUtil.getBlockDistance(((Player) sender).getLocation(), GuestUnlockPlugin.INST.getTutorialSpawn()) > GuestUnlockPlugin.INST.config.tutorial_range) {
-            throw new CommandException("Du musst dich in " + GuestUnlockPlugin.INST.config.tutorial_range + " Block Reichweite des Tutorials befinden.");
+                && LocationUtil.getBlockDistance(((Player) sender).getLocation(), plugin.getTutorialSpawn()) > plugin.config.tutorial_range) {
+            throw new CommandException("Du musst dich in " + plugin.config.tutorial_range + " Block Reichweite des Tutorials befinden.");
         } else {
-            ((Player) sender).teleport(GuestUnlockPlugin.INST.getTutorialSpawn());
+            ((Player) sender).teleport(plugin.getTutorialSpawn());
             sender.sendMessage(ChatColor.GREEN + "Du wurdest zum " + ChatColor.AQUA + "Tutorial" + ChatColor.GREEN + " teleportiert.");
         }
     }

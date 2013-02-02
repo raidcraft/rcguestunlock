@@ -43,12 +43,13 @@ public class PlayerData {
 
     public void unlock() {
 
+        final GuestUnlockPlugin plugin = RaidCraft.getComponent(GuestUnlockPlugin.class);
         Database.getTable(GuestTable.class).unlockPlayer(name);
 
         // update the players group
-        RaidCraft.getPermissions().playerAdd(GuestUnlockPlugin.INST.config.main_world, name, "rcskills.levelsign");
+        RaidCraft.getPermissions().playerAdd(plugin.config.main_world, name, "rcskills.levelsign");
         for (World world : Bukkit.getWorlds()) {
-            RaidCraft.getPermissions().playerAddGroup(world, name, GuestUnlockPlugin.INST.config.player_group);
+            RaidCraft.getPermissions().playerAddGroup(world, name, plugin.config.player_group);
         }
 
         final Player player = Bukkit.getPlayer(name);
@@ -56,13 +57,13 @@ public class PlayerData {
             player.sendMessage(ChatColor.GREEN +
                     "Deine Bewerbung wurde soeben angenommen und du wurdest freigeschaltet!\n" +
                     "Viel Spass auf " + ChatColor.RED + "Raid-Craft.de!");
-            if (GuestUnlockPlugin.INST.config.teleport_unlock && GuestUnlockPlugin.INST.getTutorialSpawn() != null) {
+            if (plugin.config.teleport_unlock && plugin.getTutorialSpawn() != null) {
                 player.sendMessage(ChatColor.YELLOW + "Du wirst in Kürze in das Tutorial teleportiert.");
                 Bukkit.getScheduler().scheduleSyncDelayedTask(CommandBook.inst(), new Runnable() {
                     @Override
                     public void run() {
 
-                        player.teleport(GuestUnlockPlugin.INST.getTutorialSpawn());
+                        player.teleport(plugin.getTutorialSpawn());
                     }
                 }, 60L);
             }
