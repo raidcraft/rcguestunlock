@@ -1,4 +1,4 @@
-main: de.raidcraft.guestunlock.GuestUnlockPlugingin
+main: de.raidcraft.guestunlock.GuestUnlockPlugin
 name: Guestunlock
 version: ${project.version}#${build.number}
 description: Guestunlock and tutorial functionality
