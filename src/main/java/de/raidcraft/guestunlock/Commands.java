@@ -52,6 +52,9 @@ public class Commands {
             if (targetPlayer == null) {
                 throw new CommandException("Der gewählte Spieler wurde nicht gefunden!");
             }
+            if(!sender.hasPermission("tutorial.tp.other.all") && targetPlayer.getLocation().getWorld() != plugin.getTutorialSpawn().getWorld()) {
+                throw new CommandException("Der Spieler muss sich auf der Hauptwelt befinden!");
+            }
             targetPlayer.teleport(plugin.getTutorialSpawn());
             sender.sendMessage(ChatColor.GREEN + "Du wurdest von einem Moderator zum " + ChatColor.AQUA + "Tutorial" + ChatColor.GREEN + " teleportiert.");
         }
