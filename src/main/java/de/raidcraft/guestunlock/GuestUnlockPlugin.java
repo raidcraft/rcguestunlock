@@ -161,6 +161,8 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
         public boolean teleport_unlock = false;
         @Setting("tutorial-range")
         public int tutorial_range = 500;
+        @Setting("member-level")
+        public int member_level = 2;
 
         public LocalConfiguration(GuestUnlockPlugin plugin) {
 

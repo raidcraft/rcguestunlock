@@ -3,9 +3,11 @@ package de.raidcraft.guestunlock;
 import com.sk89q.commandbook.CommandBook;
 import de.raidcraft.RaidCraft;
 import de.raidcraft.api.database.Database;
+import de.raidcraft.api.player.UnknownPlayerException;
+import de.raidcraft.skills.SkillsPlugin;
+import de.raidcraft.skills.api.hero.Hero;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import java.sql.ResultSet;
@@ -46,10 +48,12 @@ public class PlayerData {
         final GuestUnlockPlugin plugin = RaidCraft.getComponent(GuestUnlockPlugin.class);
         Database.getTable(GuestTable.class).unlockPlayer(name);
 
-        // update the players group
-        RaidCraft.getPermissions().playerAdd(plugin.config.main_world, name, "rcskills.levelsign");
-        for (World world : Bukkit.getWorlds()) {
-            RaidCraft.getPermissions().playerAddGroup(world, name, plugin.config.player_group);
+        // update the players groups and unlock him in the skillsystem
+        try {
+            Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(name);
+            hero.getVirtualProfession().getAttachedLevel().setLevel(plugin.config.member_level);
+        } catch (UnknownPlayerException e) {
+            RaidCraft.LOGGER.warning(e.getMessage());
         }
 
         final Player player = Bukkit.getPlayer(name);
