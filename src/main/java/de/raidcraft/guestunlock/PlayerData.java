@@ -1,6 +1,5 @@
 package de.raidcraft.guestunlock;
 
-import com.sk89q.commandbook.CommandBook;
 import de.raidcraft.RaidCraft;
 import de.raidcraft.api.database.Database;
 import de.raidcraft.api.player.UnknownPlayerException;
@@ -63,7 +62,7 @@ public class PlayerData {
                     "Viel Spass auf " + ChatColor.RED + "Raid-Craft.de!");
             if (plugin.config.teleport_unlock && plugin.getTutorialSpawn() != null) {
                 player.sendMessage(ChatColor.YELLOW + "Du wirst in Kürze in das Tutorial teleportiert.");
-                Bukkit.getScheduler().scheduleSyncDelayedTask(CommandBook.inst(), new Runnable() {
+                Bukkit.getScheduler().scheduleSyncDelayedTask(RaidCraft.getComponent(GuestUnlockPlugin.class), new Runnable() {
                     @Override
                     public void run() {
 

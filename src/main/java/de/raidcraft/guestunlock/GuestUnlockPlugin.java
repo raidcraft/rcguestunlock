@@ -1,6 +1,5 @@
 package de.raidcraft.guestunlock;
 
-import com.sk89q.commandbook.CommandBook;
 import de.raidcraft.RaidCraft;
 import de.raidcraft.api.BasePlugin;
 import de.raidcraft.api.config.ConfigurationBase;
@@ -44,7 +43,7 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
         registerTable(GuestTable.class, new GuestTable());
 
         // start a task that notifies players when their application was accepted
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(CommandBook.inst(), new Runnable() {
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
             @Override
             public void run() {
 
@@ -105,7 +104,7 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
         File file = new File(Bukkit.getWorldContainer(), config.main_world + "/players/" + name + ".dat");
         if (!file.exists()) {
             players.add(name);
-            CommandBook.logger().info("Player " + name + " joined the server the first time.");
+            RaidCraft.LOGGER.info("Player " + name + " joined the server the first time.");
         } else if (players.contains(name)) {
             players.remove(name);
         }

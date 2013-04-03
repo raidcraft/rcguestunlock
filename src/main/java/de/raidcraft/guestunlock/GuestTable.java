@@ -1,6 +1,6 @@
 package de.raidcraft.guestunlock;
 
-import com.sk89q.commandbook.CommandBook;
+import de.raidcraft.RaidCraft;
 import de.raidcraft.api.database.Table;
 
 import java.sql.ResultSet;
@@ -37,7 +37,7 @@ public class GuestTable extends Table {
                             "PRIMARY KEY ( `id` )\n" +
                             ")").execute();
         } catch (SQLException e) {
-            CommandBook.logger().severe(e.getMessage());
+            RaidCraft.LOGGER.severe(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -51,7 +51,7 @@ public class GuestTable extends Table {
                 return resultSet.getInt("count") > 0;
             }
         } catch (SQLException e) {
-            CommandBook.logger().severe(e.getMessage());
+            RaidCraft.LOGGER.severe(e.getMessage());
             e.printStackTrace();
         }
         return false;
@@ -67,7 +67,7 @@ public class GuestTable extends Table {
                     "(player, first_join, last_join, application_status) VALUES " +
                     "('" + name + "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'UNKNOWN')").execute();
         } catch (SQLException e) {
-            CommandBook.logger().severe(e.getMessage());
+            RaidCraft.LOGGER.severe(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -81,7 +81,7 @@ public class GuestTable extends Table {
                 return new PlayerData(resultSet.getString("player"), resultSet);
             }
         } catch (SQLException e) {
-            CommandBook.logger().severe(e.getMessage());
+            RaidCraft.LOGGER.severe(e.getMessage());
             e.printStackTrace();
         }
         return null;
@@ -97,7 +97,7 @@ public class GuestTable extends Table {
                 playerDatas.add(new PlayerData(resultSet.getString("player"), resultSet));
             }
         } catch (SQLException e) {
-            CommandBook.logger().severe(e.getMessage());
+            RaidCraft.LOGGER.severe(e.getMessage());
             e.printStackTrace();
         }
         return playerDatas;
@@ -109,7 +109,7 @@ public class GuestTable extends Table {
             getConnection().prepareStatement("UPDATE `" + getTableName() + "` " +
                     "SET unlocked=CURRENT_TIMESTAMP WHERE player='" + player + "'").execute();
         } catch (SQLException e) {
-            CommandBook.logger().severe(e.getMessage());
+            RaidCraft.LOGGER.severe(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -120,7 +120,7 @@ public class GuestTable extends Table {
             getConnection().prepareStatement("UPDATE `" + getTableName() + "` " +
                     "SET last_join=CURRENT_TIMESTAMP WHERE player='" + player + "'").execute();
         } catch (SQLException e) {
-            CommandBook.logger().severe(e.getMessage());
+            RaidCraft.LOGGER.severe(e.getMessage());
             e.printStackTrace();
         }
     }
