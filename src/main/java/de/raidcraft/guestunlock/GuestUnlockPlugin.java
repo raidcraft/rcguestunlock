@@ -9,7 +9,6 @@ import de.raidcraft.util.EnumUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -50,6 +49,9 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
                 GuestTable table = Database.getTable(GuestTable.class);
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     PlayerData data = table.getPlayer(player.getName());
+                    if (data == null) {
+                        return;
+                    }
                     if (data.isAcceptedAndLocked()) {
                         data.unlock();
                     } else if (player.hasPermission("raidcraft.player")) {
@@ -121,9 +123,6 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
             }
             // update the players permission groups
             event.setJoinMessage(ChatColor.AQUA + event.getPlayer().getName() + ChatColor.YELLOW + " ist das erste Mal auf Raid-Craft!");
-            for (World world : Bukkit.getWorlds()) {
-                RaidCraft.getPermissions().playerAddGroup(world, event.getPlayer().getName(), config.guest_group);
-            }
             players.remove(event.getPlayer().getName());
         }
         // lets generate that player in the database
