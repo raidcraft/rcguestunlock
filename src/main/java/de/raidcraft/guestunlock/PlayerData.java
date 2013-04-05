@@ -77,4 +77,10 @@ public class PlayerData {
 
         Database.getTable(GuestTable.class).updateLastJoin(name);
     }
+
+    @Override
+    public String toString() {
+
+        return name;
+    }
 }

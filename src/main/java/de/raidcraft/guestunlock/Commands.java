@@ -86,6 +86,7 @@ public class Commands {
         }
         // lets check the captcha CaSE_SEnsteTive
         player.unlock();
+        sender.sendMessage(ChatColor.GREEN + "Der Spieler " + ChatColor.AQUA + player + ChatColor.GREEN + " wurde freigeschaltet.");
     }
 
     @Command(
