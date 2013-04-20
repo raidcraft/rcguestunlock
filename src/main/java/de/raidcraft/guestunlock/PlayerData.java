@@ -45,31 +45,37 @@ public class PlayerData {
     public void unlock() {
 
         final GuestUnlockPlugin plugin = RaidCraft.getComponent(GuestUnlockPlugin.class);
-        Database.getTable(GuestTable.class).unlockPlayer(name);
 
         // update the players groups and unlock him in the skillsystem
         try {
             Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(name);
-            hero.getVirtualProfession().getAttachedLevel().setLevel(plugin.config.member_level);
+            if (hero.getPlayer() != null && hero.getPlayer().isOnline()) {
+
+                Database.getTable(GuestTable.class).unlockPlayer(name);
+                hero.getVirtualProfession().getAttachedLevel().setLevel(plugin.config.member_level);
+
+                final Player player = Bukkit.getPlayer(name);
+                if (player != null) {
+                    player.sendMessage(ChatColor.GREEN +
+                            "Deine Bewerbung wurde soeben angenommen und du wurdest freigeschaltet!\n" +
+                            "Viel Spass auf " + ChatColor.RED + "Raid-Craft.de!");
+                    if (plugin.config.teleport_unlock && plugin.getTutorialSpawn() != null) {
+                        player.sendMessage(ChatColor.YELLOW + "Du wirst in Kürze in das Tutorial teleportiert.");
+                        Bukkit.getScheduler().scheduleSyncDelayedTask(RaidCraft.getComponent(GuestUnlockPlugin.class), new Runnable() {
+                            @Override
+                            public void run() {
+
+                                player.teleport(plugin.getTutorialSpawn());
+                            }
+                        }, 60L);
+                    }
+                }
+            } else {
+                // player is offline
+                Database.getTable(GuestTable.class).acceptPlayer(name);
+            }
         } catch (UnknownPlayerException e) {
             RaidCraft.LOGGER.warning(e.getMessage());
-        }
-
-        final Player player = Bukkit.getPlayer(name);
-        if (player != null) {
-            player.sendMessage(ChatColor.GREEN +
-                    "Deine Bewerbung wurde soeben angenommen und du wurdest freigeschaltet!\n" +
-                    "Viel Spass auf " + ChatColor.RED + "Raid-Craft.de!");
-            if (plugin.config.teleport_unlock && plugin.getTutorialSpawn() != null) {
-                player.sendMessage(ChatColor.YELLOW + "Du wirst in Kürze in das Tutorial teleportiert.");
-                Bukkit.getScheduler().scheduleSyncDelayedTask(RaidCraft.getComponent(GuestUnlockPlugin.class), new Runnable() {
-                    @Override
-                    public void run() {
-
-                        player.teleport(plugin.getTutorialSpawn());
-                    }
-                }, 60L);
-            }
         }
     }
 

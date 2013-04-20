@@ -52,10 +52,8 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
                     if (data == null) {
                         return;
                     }
-                    if (data.isAcceptedAndLocked()) {
+                    if (data.isAcceptedAndLocked() || player.hasPermission("raidcraft.player")) {
                         data.unlock();
-                    } else if (player.hasPermission("raidcraft.player")) {
-                        Database.getTable(GuestTable.class).unlockPlayer(player.getName());
                     }
                 }
             }
@@ -137,10 +135,6 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
         public int task_delay = 60;
         @Setting("main-world")
         public String main_world = "world";
-        @Setting("guest-group")
-        public String guest_group = "guest";
-        @Setting("player-group")
-        public String player_group = "player";
         @Setting("tutorial-spawn.world")
         public String world = "world";
         @Setting("tutorial-spawn.x")

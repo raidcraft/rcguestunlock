@@ -24,18 +24,17 @@ public class GuestTable extends Table {
     public void createTable() {
 
         try {
-            getConnection().prepareStatement(
-                    "CREATE TABLE `" + getTableName() + "` (\n" +
-                            "`id` INT NOT NULL AUTO_INCREMENT ,\n" +
-                            "`player` VARCHAR( 32 ) NOT NULL ,\n" +
-                            "`application_status` VARCHAR( 64 ) NOT NULL DEFAULT 'UNKNOWN' ,\n" +
-                            "`application_processed` TIMESTAMP NULL DEFAULT NULL , \n" +
-                            "`unlocked` TIMESTAMP NULL DEFAULT NULL , \n" +
-                            "`first_join` TIMESTAMP NOT NULL , \n" +
-                            "`last_join` TIMESTAMP NOT NULL , \n" +
-                            "`forum_post_url` VARCHAR ( 256 ) NULL DEFAULT NULL , \n" +
-                            "PRIMARY KEY ( `id` )\n" +
-                            ")").execute();
+            executeUpdate("CREATE TABLE `" + getTableName() + "` (\n" +
+                    "`id` INT NOT NULL AUTO_INCREMENT ,\n" +
+                    "`player` VARCHAR( 32 ) NOT NULL ,\n" +
+                    "`application_status` VARCHAR( 64 ) NOT NULL DEFAULT 'UNKNOWN' ,\n" +
+                    "`application_processed` TIMESTAMP NULL DEFAULT NULL , \n" +
+                    "`unlocked` TIMESTAMP NULL DEFAULT NULL , \n" +
+                    "`first_join` TIMESTAMP NOT NULL , \n" +
+                    "`last_join` TIMESTAMP NOT NULL , \n" +
+                    "`forum_post_url` VARCHAR ( 256 ) NULL DEFAULT NULL , \n" +
+                    "PRIMARY KEY ( `id` )\n" +
+                    ")");
         } catch (SQLException e) {
             RaidCraft.LOGGER.severe(e.getMessage());
             e.printStackTrace();
@@ -45,8 +44,8 @@ public class GuestTable extends Table {
     public boolean exists(String player) {
 
         try {
-            ResultSet resultSet = getConnection().prepareStatement(
-                    "SELECT COUNT(*) as count FROM `" + getTableName() + "` WHERE player='" + player + "'").executeQuery();
+            ResultSet resultSet = executeQuery(
+                    "SELECT COUNT(*) as count FROM `" + getTableName() + "` WHERE player='" + player + "'");
             if (resultSet.next()) {
                 return resultSet.getInt("count") > 0;
             }
@@ -63,9 +62,9 @@ public class GuestTable extends Table {
             return;
         }
         try {
-            getConnection().prepareStatement("INSERT INTO `" + getTableName() + "` " +
+            executeUpdate("INSERT INTO `" + getTableName() + "` " +
                     "(player, first_join, last_join, application_status) VALUES " +
-                    "('" + name + "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'UNKNOWN')").execute();
+                    "('" + name + "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'UNKNOWN')");
         } catch (SQLException e) {
             RaidCraft.LOGGER.severe(e.getMessage());
             e.printStackTrace();
@@ -75,9 +74,9 @@ public class GuestTable extends Table {
     public PlayerData getPlayer(String name) {
 
         try {
-            ResultSet resultSet = getConnection().prepareStatement(
-                    "SELECT * FROM `" + getTableName() + "` WHERE player='" + name + "'").executeQuery();
-            while (resultSet.next()) {
+            ResultSet resultSet = executeQuery(
+                    "SELECT * FROM `" + getTableName() + "` WHERE player='" + name + "'");
+            if (resultSet.next()) {
                 return new PlayerData(resultSet.getString("player"), resultSet);
             }
         } catch (SQLException e) {
@@ -91,8 +90,8 @@ public class GuestTable extends Table {
 
         List<PlayerData> playerDatas = new ArrayList<>();
         try {
-            ResultSet resultSet = getConnection().prepareStatement(
-                    "SELECT * FROM `" + getTableName() + "` WHERE player LIKE '" + name + "%' ORDER BY last_join desc").executeQuery();
+            ResultSet resultSet = executeQuery(
+                    "SELECT * FROM `" + getTableName() + "` WHERE player LIKE '" + name + "%' ORDER BY last_join desc");
             while (resultSet.next()) {
                 playerDatas.add(new PlayerData(resultSet.getString("player"), resultSet));
             }
@@ -106,8 +105,21 @@ public class GuestTable extends Table {
     public void unlockPlayer(String player) {
 
         try {
-            getConnection().prepareStatement("UPDATE `" + getTableName() + "` " +
-                    "SET unlocked=CURRENT_TIMESTAMP WHERE player='" + player + "'").execute();
+            executeUpdate("UPDATE `" + getTableName() + "` " +
+                    "SET unlocked=CURRENT_TIMESTAMP WHERE player='" + player + "'");
+        } catch (SQLException e) {
+            RaidCraft.LOGGER.severe(e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void acceptPlayer(String player) {
+
+        try {
+            executeUpdate("UPDATE `" + getTableName() + "` " +
+                    "SET application_status=ACCEPTED, application_processed=CURRENT_TIMESTAMP " +
+                    "WHERE player='" + player + "'"
+            );
         } catch (SQLException e) {
             RaidCraft.LOGGER.severe(e.getMessage());
             e.printStackTrace();
@@ -117,8 +129,8 @@ public class GuestTable extends Table {
     public void updateLastJoin(String player) {
 
         try {
-            getConnection().prepareStatement("UPDATE `" + getTableName() + "` " +
-                    "SET last_join=CURRENT_TIMESTAMP WHERE player='" + player + "'").execute();
+            executeUpdate("UPDATE `" + getTableName() + "` " +
+                    "SET last_join=CURRENT_TIMESTAMP WHERE player='" + player + "'");
         } catch (SQLException e) {
             RaidCraft.LOGGER.severe(e.getMessage());
             e.printStackTrace();

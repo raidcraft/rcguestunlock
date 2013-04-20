@@ -29,6 +29,7 @@ public class Commands {
             desc = "Teleportiert den Spieler in das Tutorial",
             flags = "s"
     )
+    @CommandPermissions("raidcraft.player")
     public void tutorial(CommandContext args, CommandSender sender) throws CommandException {
 
         if (!(sender instanceof Player)) {
@@ -62,9 +63,6 @@ public class Commands {
         if (sender.hasPermission("raidcraft.player")
                 && LocationUtil.getBlockDistance(((Player) sender).getLocation(), plugin.getTutorialSpawn()) > plugin.config.tutorial_range) {
             throw new CommandException("Du musst dich in " + plugin.config.tutorial_range + " Block Reichweite des Tutorials befinden.");
-        } else {
-            ((Player) sender).teleport(plugin.getTutorialSpawn());
-            sender.sendMessage(ChatColor.GREEN + "Du wurdest zum " + ChatColor.AQUA + "Tutorial" + ChatColor.GREEN + " teleportiert.");
         }
     }
 
@@ -84,7 +82,6 @@ public class Commands {
         if (player.unlocked != null) {
             throw new CommandException("Der Spieler wurde bereits freigeschaltet.");
         }
-        // lets check the captcha CaSE_SEnsteTive
         player.unlock();
         sender.sendMessage(ChatColor.GREEN + "Der Spieler " + ChatColor.AQUA + player + ChatColor.GREEN + " wurde freigeschaltet.");
     }
