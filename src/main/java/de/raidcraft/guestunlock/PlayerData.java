@@ -71,10 +71,9 @@ public class PlayerData {
                         }, 60L);
                     }
                 }
-            } else {
-                // player is offline
-                Database.getTable(GuestTable.class).acceptPlayer(name);
             }
+            // player is offline
+            Database.getTable(GuestTable.class).acceptPlayer(name);
         } catch (UnknownPlayerException e) {
             RaidCraft.LOGGER.warning(e.getMessage());
         }
