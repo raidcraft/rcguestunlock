@@ -52,7 +52,9 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
                     if (data == null) {
                         return;
                     }
-                    if (data.isAcceptedAndLocked() || player.hasPermission("raidcraft.player")) {
+                    if (data.isAcceptedAndLocked()) {
+                        data.unlock();
+                    } else if (data.status != ApplicationStatus.ACCEPTED && player.hasPermission("raidcraft.player")) {
                         data.unlock();
                     }
                 }
