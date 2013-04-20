@@ -48,9 +48,10 @@ public class PlayerData {
 
         // update the players groups and unlock him in the skillsystem
         try {
-            Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(name);
-            if (hero.getPlayer() != null && hero.getPlayer().isOnline()) {
+            Player p = Bukkit.getPlayer(name);
+            if (p != null && p.getPlayer().isOnline()) {
 
+                Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(name);
                 Database.getTable(GuestTable.class).unlockPlayer(name);
                 hero.getVirtualProfession().getAttachedLevel().setLevel(plugin.config.member_level);
 
