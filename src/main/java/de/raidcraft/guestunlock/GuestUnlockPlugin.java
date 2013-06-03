@@ -113,13 +113,19 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public void onPlayerJoin(PlayerJoinEvent event) {
+    public void onPlayerJoin(final PlayerJoinEvent event) {
 
         // lets set the permission group guest if this is his first join
         if (players.contains(event.getPlayer().getName())) {
             // teleport the player to the tutorial
             if (config.teleport_first_join && getTutorialSpawn() != null) {
-                event.getPlayer().teleport(getTutorialSpawn());
+                Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+                    @Override
+                    public void run() {
+
+                        event.getPlayer().teleport(getTutorialSpawn());
+                    }
+                }, 20L);
             }
             // update the players permission groups
             event.setJoinMessage(ChatColor.AQUA + event.getPlayer().getName() + ChatColor.YELLOW + " ist das erste Mal auf Raid-Craft!");
