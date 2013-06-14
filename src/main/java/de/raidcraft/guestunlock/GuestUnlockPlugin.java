@@ -31,6 +31,7 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
     private Set<String> players = new HashSet<>();
     public LocalConfiguration config;
     private Location tutorialSpawn = null;
+    private GuestTable table;
 
     @Override
     public void enable() {
@@ -40,26 +41,31 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
         registerEvents(this);
         registerCommands(Commands.class);
         registerTable(GuestTable.class, new GuestTable());
+        table = Database.getTable(GuestTable.class);
 
         // start a task that notifies players when their application was accepted
         Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
             @Override
             public void run() {
 
-                GuestTable table = Database.getTable(GuestTable.class);
                 for (Player player : Bukkit.getOnlinePlayers()) {
-                    PlayerData data = table.getPlayer(player.getName());
-                    if (data == null) {
-                        return;
-                    }
-                    if (data.isAcceptedAndLocked()) {
-                        data.unlock();
-                    } else if (data.status != ApplicationStatus.ACCEPTED && player.hasPermission("raidcraft.admin")) {
-                        data.unlock();
-                    }
+                    checkForUnlock(player);
                 }
             }
         }, config.task_delay * 20, config.task_delay * 20);
+    }
+
+    private void checkForUnlock(Player player) {
+
+        PlayerData data = table.getPlayer(player.getName());
+        if (data == null) {
+            return;
+        }
+        if (data.isAcceptedAndLocked()) {
+            data.unlock();
+        } else if (data.status != ApplicationStatus.ACCEPTED && player.hasPermission("raidcraft.admin")) {
+            data.unlock();
+        }
     }
 
     @Override
@@ -115,6 +121,7 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onPlayerJoin(final PlayerJoinEvent event) {
 
+        checkForUnlock(event.getPlayer());
         // lets set the permission group guest if this is his first join
         if (players.contains(event.getPlayer().getName())) {
             // teleport the player to the tutorial
