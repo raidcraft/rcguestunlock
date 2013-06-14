@@ -39,7 +39,19 @@ public class PlayerData {
 
     public boolean isAcceptedAndLocked() {
 
-        return status == GuestUnlockPlugin.ApplicationStatus.ACCEPTED && unlocked == null;
+        final GuestUnlockPlugin plugin = RaidCraft.getComponent(GuestUnlockPlugin.class);
+        try {
+            if (status == GuestUnlockPlugin.ApplicationStatus.ACCEPTED && unlocked == null) {
+                return true;
+            }
+            Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(name);
+            if (status == GuestUnlockPlugin.ApplicationStatus.ACCEPTED
+                    && hero.getVirtualProfession().getAttachedLevel().getLevel() < plugin.config.member_level) {
+                return true;
+            }
+        } catch (UnknownPlayerException ignored) {
+        }
+        return false;
     }
 
     public void unlock() {

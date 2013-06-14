@@ -6,6 +6,9 @@ import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.minecraft.util.commands.CommandPermissions;
 import de.raidcraft.RaidCraft;
 import de.raidcraft.api.database.Database;
+import de.raidcraft.api.player.UnknownPlayerException;
+import de.raidcraft.skills.SkillsPlugin;
+import de.raidcraft.skills.api.hero.Hero;
 import de.raidcraft.util.LocationUtil;
 import de.raidcraft.util.PaginatedResult;
 import org.bukkit.Bukkit;
@@ -20,8 +23,11 @@ import org.bukkit.entity.Player;
  */
 public class Commands {
 
-    public Commands(GuestUnlockPlugin module) {
+    private final GuestUnlockPlugin plugin;
 
+    public Commands(GuestUnlockPlugin plugin) {
+
+        this.plugin = plugin;
     }
 
     @Command(
@@ -75,15 +81,20 @@ public class Commands {
     @CommandPermissions("guestunlock.unlock")
     public void unlock(CommandContext args, CommandSender sender) throws CommandException {
 
-        PlayerData player = Database.getTable(GuestTable.class).getPlayer(args.getString(0));
-        if (player == null) {
-            throw new CommandException("Es gibt keinen Spieler mit dem Namen: " + args.getString(0));
+        try {
+            PlayerData player = Database.getTable(GuestTable.class).getPlayer(args.getString(0));
+            if (player == null) {
+                throw new CommandException("Es gibt keinen Spieler mit dem Namen: " + args.getString(0));
+            }
+            Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(player.name);
+            if (player.unlocked != null && hero.getVirtualProfession().getAttachedLevel().getLevel() >= plugin.config.member_level) {
+                throw new CommandException("Der Spieler wurde bereits freigeschaltet.");
+            }
+            player.unlock();
+            sender.sendMessage(ChatColor.GREEN + "Der Spieler " + ChatColor.AQUA + player + ChatColor.GREEN + " wurde freigeschaltet.");
+        } catch (UnknownPlayerException e) {
+            throw new CommandException(e.getMessage());
         }
-        if (player.unlocked != null) {
-            throw new CommandException("Der Spieler wurde bereits freigeschaltet.");
-        }
-        player.unlock();
-        sender.sendMessage(ChatColor.GREEN + "Der Spieler " + ChatColor.AQUA + player + ChatColor.GREEN + " wurde freigeschaltet.");
     }
 
     @Command(
