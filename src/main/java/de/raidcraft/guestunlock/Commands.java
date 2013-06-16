@@ -76,6 +76,7 @@ public class Commands {
             aliases = {"gast", "unlock", "gunlock", "gu", "guest"},
             desc = "Schaltet Spieler nach erfolgreicher Bewerbung frei.",
             usage = "<player>",
+            flags = "f",
             min = 1
     )
     @CommandPermissions("guestunlock.unlock")
@@ -83,8 +84,13 @@ public class Commands {
 
         try {
             PlayerData player = Database.getTable(GuestTable.class).getPlayer(args.getString(0));
-            if (player == null) {
+            if (!args.hasFlag('f') && player == null) {
                 throw new CommandException("Es gibt keinen Spieler mit dem Namen: " + args.getString(0));
+            }
+            // create a new player entry
+            if (player == null && args.hasFlag('f')) {
+                Database.getTable(GuestTable.class).addPlayer(args.getString(0));
+                player = Database.getTable(GuestTable.class).getPlayer(args.getString(0));
             }
             Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(player.name);
             if (player.unlocked != null && hero.getVirtualProfession().getAttachedLevel().getLevel() >= plugin.config.member_level) {
