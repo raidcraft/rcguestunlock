@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>guestunlock</artifactId>
     <packaging>jar</packaging>
-    <version>1.1.5-SNAPSHOT</version>
+    <version>1.1.4-SNAPSHOT</version>
     <name>GuestUnlock</name>
 
     <scm>
@@ -33,7 +33,7 @@
     <parent>
         <groupId>de.raidcraft</groupId>
         <artifactId>masterpom</artifactId>
-        <version>LATEST</version>
+        <version>RELEASE</version>
     </parent>
 
     <repositories>
@@ -47,12 +47,12 @@
         <dependency>
             <groupId>de.raidcraft</groupId>
             <artifactId>raidcraft-api</artifactId>
-            <version>LATEST</version>
+            <version>${rc.version}</version>
         </dependency>
         <dependency>
             <groupId>de.raidcraft</groupId>
             <artifactId>skills</artifactId>
-            <version>LATEST</version>
+            <version>${rc.version}</version>
         </dependency>
     </dependencies>
 </project>
