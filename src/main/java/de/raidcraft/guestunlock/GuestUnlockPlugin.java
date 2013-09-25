@@ -109,7 +109,7 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
 
         Player player = event.getPlayer();
         String name = player.getName();
-        File file = new File(Bukkit.getWorldContainer(), config.main_world + "/players/" + name + ".dat");
+        File file = new File(event.getPlayer().getWorld().getWorldFolder(), "/players/" + name + ".dat");
         if (!file.exists()) {
             players.add(name);
             RaidCraft.LOGGER.info("Player " + name + " joined the server the first time.");
