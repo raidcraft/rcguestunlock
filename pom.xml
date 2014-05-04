@@ -24,10 +24,7 @@
     <name>GuestUnlock</name>
 
     <scm>
-        <connection>scm:git:ssh://git@srvdev2.raid-craft.de:22109/${project.artifactId}.git</connection>
-        <developerConnection>scm:git:ssh://git@srvdev2.raid-craft.de:22109/${project.artifactId}.git</developerConnection>
-        <url>http://git.raid-craft.de/${project.artifactId}</url>
-        <tag>HEAD</tag>
+        <developerConnection>scm:git:ssh://git@raid-craft.de:22109/raid-craft-de/${project.artifactId}.git</developerConnection>
     </scm>
 
     <parent>
@@ -44,11 +41,6 @@
     </repositories>
 
     <dependencies>
-        <dependency>
-            <groupId>de.raidcraft</groupId>
-            <artifactId>raidcraft-api</artifactId>
-            <version>${rc.version}</version>
-        </dependency>
         <dependency>
             <groupId>de.raidcraft</groupId>
             <artifactId>skills</artifactId>
