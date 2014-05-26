@@ -20,6 +20,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * @author Silthus
@@ -109,7 +110,8 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
 
         Player player = event.getPlayer();
         String name = player.getName();
-        File file = new File(event.getPlayer().getWorld().getWorldFolder(), "/players/" + name + ".dat");
+	    UUID uuid = player.getUniqueId();
+        File file = new File(event.getPlayer().getWorld().getWorldFolder(), "/playerdata/" + uuid + ".dat");
         if (!file.exists()) {
             players.add(name);
             RaidCraft.LOGGER.info("Player " + name + " joined the server the first time.");
