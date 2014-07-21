@@ -47,5 +47,10 @@
             <artifactId>skills</artifactId>
             <version>${rc.version}</version>
         </dependency>
+        <dependency>
+            <groupId>de.raidcraft</groupId>
+            <artifactId>skills</artifactId>
+            <version>1.2.4-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>
