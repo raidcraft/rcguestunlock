@@ -6,11 +6,11 @@ import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.minecraft.util.commands.CommandPermissions;
 import de.raidcraft.RaidCraft;
 import de.raidcraft.api.database.Database;
-import de.raidcraft.api.player.UnknownPlayerException;
 import de.raidcraft.skills.SkillsPlugin;
 import de.raidcraft.skills.api.hero.Hero;
 import de.raidcraft.util.LocationUtil;
 import de.raidcraft.util.PaginatedResult;
+import de.raidcraft.util.UUIDUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -59,7 +59,7 @@ public class Commands {
             if (targetPlayer == null) {
                 throw new CommandException("Der gewählte Spieler wurde nicht gefunden!");
             }
-            if(!sender.hasPermission("tutorial.tp.other.all") && targetPlayer.getLocation().getWorld() != plugin.getTutorialSpawn().getWorld()) {
+            if (!sender.hasPermission("tutorial.tp.other.all") && targetPlayer.getLocation().getWorld() != plugin.getTutorialSpawn().getWorld()) {
                 throw new CommandException("Der Spieler muss sich auf der Hauptwelt befinden!");
             }
             targetPlayer.teleport(plugin.getTutorialSpawn());
@@ -82,25 +82,22 @@ public class Commands {
     @CommandPermissions("guestunlock.unlock")
     public void unlock(CommandContext args, CommandSender sender) throws CommandException {
 
-        try {
-            PlayerData player = Database.getTable(GuestTable.class).getPlayer(args.getString(0));
-            if (!args.hasFlag('f') && player == null) {
-                throw new CommandException("Es gibt keinen Spieler mit dem Namen: " + args.getString(0));
-            }
-            // create a new player entry
-            if (player == null && args.hasFlag('f')) {
-                Database.getTable(GuestTable.class).addPlayer(args.getString(0));
-                player = Database.getTable(GuestTable.class).getPlayer(args.getString(0));
-            }
-            Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(player.name);
-            if (player.unlocked != null && hero.getVirtualProfession().getAttachedLevel().getLevel() >= plugin.config.member_level) {
-                throw new CommandException("Der Spieler wurde bereits freigeschaltet.");
-            }
-            player.unlock();
-            sender.sendMessage(ChatColor.GREEN + "Der Spieler " + ChatColor.AQUA + player + ChatColor.GREEN + " wurde freigeschaltet.");
-        } catch (UnknownPlayerException e) {
-            throw new CommandException(e.getMessage());
+        PlayerData player = Database.getTable(GuestTable.class).getPlayer(args.getString(0));
+        if (!args.hasFlag('f') && player == null) {
+            throw new CommandException("Es gibt keinen Spieler mit dem Namen: " + args.getString(0));
         }
+        // create a new player entry
+        if (player == null && args.hasFlag('f')) {
+            Database.getTable(GuestTable.class).addPlayer(args.getString(0));
+            player = Database.getTable(GuestTable.class).getPlayer(args.getString(0));
+        }
+        Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager()
+                .getHero(UUIDUtil.convertPlayer(player.name));
+        if (player.unlocked != null && hero.getVirtualProfession().getAttachedLevel().getLevel() >= plugin.config.member_level) {
+            throw new CommandException("Der Spieler wurde bereits freigeschaltet.");
+        }
+        player.unlock();
+        sender.sendMessage(ChatColor.GREEN + "Der Spieler " + ChatColor.AQUA + player + ChatColor.GREEN + " wurde freigeschaltet.");
     }
 
     @Command(
