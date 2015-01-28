@@ -8,13 +8,15 @@ import de.raidcraft.RaidCraft;
 import de.raidcraft.api.database.Database;
 import de.raidcraft.skills.SkillsPlugin;
 import de.raidcraft.skills.api.hero.Hero;
+import de.raidcraft.util.CommandUtil;
 import de.raidcraft.util.LocationUtil;
 import de.raidcraft.util.PaginatedResult;
 import de.raidcraft.util.UUIDUtil;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+
+import java.util.UUID;
 
 /**
  * Author: Philip
@@ -55,7 +57,7 @@ public class Commands {
         }
 
         if (args.argsLength() > 0 && sender.hasPermission("tutorial.tp.other")) {
-            Player targetPlayer = Bukkit.getPlayer(args.getString(0));
+            Player targetPlayer = CommandUtil.grabPlayer(args.getString(0));
             if (targetPlayer == null) {
                 throw new CommandException("Der gewählte Spieler wurde nicht gefunden!");
             }
@@ -82,17 +84,18 @@ public class Commands {
     @CommandPermissions("guestunlock.unlock")
     public void unlock(CommandContext args, CommandSender sender) throws CommandException {
 
-        PlayerData player = Database.getTable(GuestTable.class).getPlayer(args.getString(0));
+        UUID playerId = UUIDUtil.convertPlayer(args.getString(0));
+        PlayerData player = Database.getTable(GuestTable.class).getPlayer(playerId);
         if (!args.hasFlag('f') && player == null) {
             throw new CommandException("Es gibt keinen Spieler mit dem Namen: " + args.getString(0));
         }
         // create a new player entry
         if (player == null && args.hasFlag('f')) {
-            Database.getTable(GuestTable.class).addPlayer(args.getString(0));
-            player = Database.getTable(GuestTable.class).getPlayer(args.getString(0));
+            Database.getTable(GuestTable.class).addPlayer(playerId);
+            player = Database.getTable(GuestTable.class).getPlayer(playerId);
         }
         Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager()
-                .getHero(UUIDUtil.convertPlayer(player.name));
+                .getHero(playerId);
         if (player.unlocked != null && hero.getVirtualProfession().getAttachedLevel().getLevel() >= plugin.config.member_level) {
             throw new CommandException("Der Spieler wurde bereits freigeschaltet.");
         }
@@ -128,7 +131,7 @@ public class Commands {
                         sb.append(ChatColor.AQUA);
                         break;
                 }
-                sb.append(playerData.name);
+                sb.append(UUIDUtil.getNameFromUUID(playerData.playerId));
                 sb.append(ChatColor.GRAY).append(ChatColor.ITALIC).append(" - ");
                 sb.append(GuestUnlockPlugin.DATE_FORMAT.format(playerData.firstJoin)).append(" - ");
                 sb.append((playerData.unlocked == null ? ChatColor.RED + "Not Unlocked" : GuestUnlockPlugin.DATE_FORMAT.format(playerData.unlocked)));

@@ -4,7 +4,6 @@ import de.raidcraft.RaidCraft;
 import de.raidcraft.api.database.Database;
 import de.raidcraft.skills.SkillsPlugin;
 import de.raidcraft.skills.api.hero.Hero;
-import de.raidcraft.util.UUIDUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -12,6 +11,7 @@ import org.bukkit.entity.Player;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.UUID;
 
 /**
  * Author: Philip
@@ -20,16 +20,16 @@ import java.sql.Timestamp;
  */
 public class PlayerData {
 
-    public final String name;
+    public final UUID playerId;
     public final Timestamp firstJoin;
     public final Timestamp lastJoin;
     public final Timestamp unlocked;
     public final Timestamp applicationProcessed;
     public final GuestUnlockPlugin.ApplicationStatus status;
 
-    public PlayerData(String name, ResultSet resultSet) throws SQLException {
+    public PlayerData(UUID playerId, ResultSet resultSet) throws SQLException {
 
-        this.name = name;
+        this.playerId = playerId;
         this.firstJoin = resultSet.getTimestamp("first_join");
         this.lastJoin = resultSet.getTimestamp("last_join");
         this.unlocked = resultSet.getTimestamp("unlocked");
@@ -44,7 +44,7 @@ public class PlayerData {
             return true;
         }
         Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager()
-                .getHero(UUIDUtil.convertPlayer(name));
+                .getHero(playerId);
         if (status == GuestUnlockPlugin.ApplicationStatus.ACCEPTED
                 && hero.getVirtualProfession().getAttachedLevel().getLevel() < plugin.config.member_level) {
             return true;
@@ -58,15 +58,15 @@ public class PlayerData {
         final GuestUnlockPlugin plugin = RaidCraft.getComponent(GuestUnlockPlugin.class);
 
         // update the players groups and unlock him in the skillsystem
-        Player p = Bukkit.getPlayer(UUIDUtil.convertPlayer(name));
+        Player p = Bukkit.getPlayer(playerId);
         if (p != null && p.getPlayer().isOnline()) {
 
             Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager()
                     .getHero(p.getUniqueId());
-            Database.getTable(GuestTable.class).unlockPlayer(name);
+            Database.getTable(GuestTable.class).unlockPlayer(playerId);
             hero.getVirtualProfession().getAttachedLevel().setLevel(plugin.config.member_level);
 
-            final Player player = Bukkit.getPlayer(name);
+            final Player player = Bukkit.getPlayer(playerId);
             if (player != null) {
                 player.sendMessage(ChatColor.GREEN +
                         "Deine Bewerbung wurde soeben angenommen und du wurdest freigeschaltet!\n" +
@@ -84,17 +84,11 @@ public class PlayerData {
             }
         }
         // player is offline
-        Database.getTable(GuestTable.class).acceptPlayer(name);
+        Database.getTable(GuestTable.class).acceptPlayer(playerId);
     }
 
     public void updateLastJoin() {
 
-        Database.getTable(GuestTable.class).updateLastJoin(name);
-    }
-
-    @Override
-    public String toString() {
-
-        return name;
+        Database.getTable(GuestTable.class).updateLastJoin(playerId);
     }
 }
