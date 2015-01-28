@@ -110,7 +110,7 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
 
         Player player = event.getPlayer();
         String name = player.getName();
-	    UUID uuid = player.getUniqueId();
+        UUID uuid = player.getUniqueId();
         File file = new File(event.getPlayer().getWorld().getWorldFolder(), "/playerdata/" + uuid + ".dat");
         if (!file.exists()) {
             players.add(name);

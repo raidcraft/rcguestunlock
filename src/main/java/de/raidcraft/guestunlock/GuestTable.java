@@ -117,8 +117,8 @@ public class GuestTable extends Table {
 
         try {
             executeUpdate("UPDATE `" + getTableName() + "` " +
-                    "SET application_status='ACCEPTED', application_processed=CURRENT_TIMESTAMP " +
-                    "WHERE player='" + player + "'"
+                            "SET application_status='ACCEPTED', application_processed=CURRENT_TIMESTAMP " +
+                            "WHERE player='" + player + "'"
             );
         } catch (SQLException e) {
             RaidCraft.LOGGER.severe(e.getMessage());
