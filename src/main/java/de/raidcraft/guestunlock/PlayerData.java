@@ -2,7 +2,6 @@ package de.raidcraft.guestunlock;
 
 import de.raidcraft.RaidCraft;
 import de.raidcraft.api.database.Database;
-import de.raidcraft.api.player.UnknownPlayerException;
 import de.raidcraft.skills.SkillsPlugin;
 import de.raidcraft.skills.api.hero.Hero;
 import org.bukkit.Bukkit;
@@ -12,6 +11,7 @@ import org.bukkit.entity.Player;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.UUID;
 
 /**
  * Author: Philip
@@ -20,16 +20,16 @@ import java.sql.Timestamp;
  */
 public class PlayerData {
 
-    public final String name;
+    public final UUID playerId;
     public final Timestamp firstJoin;
     public final Timestamp lastJoin;
     public final Timestamp unlocked;
     public final Timestamp applicationProcessed;
     public final GuestUnlockPlugin.ApplicationStatus status;
 
-    public PlayerData(String name, ResultSet resultSet) throws SQLException {
+    public PlayerData(UUID playerId, ResultSet resultSet) throws SQLException {
 
-        this.name = name;
+        this.playerId = playerId;
         this.firstJoin = resultSet.getTimestamp("first_join");
         this.lastJoin = resultSet.getTimestamp("last_join");
         this.unlocked = resultSet.getTimestamp("unlocked");
@@ -40,17 +40,16 @@ public class PlayerData {
     public boolean isAcceptedAndLocked() {
 
         final GuestUnlockPlugin plugin = RaidCraft.getComponent(GuestUnlockPlugin.class);
-        try {
-            if (status == GuestUnlockPlugin.ApplicationStatus.ACCEPTED && unlocked == null) {
-                return true;
-            }
-            Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(name);
-            if (status == GuestUnlockPlugin.ApplicationStatus.ACCEPTED
-                    && hero.getVirtualProfession().getAttachedLevel().getLevel() < plugin.config.member_level) {
-                return true;
-            }
-        } catch (UnknownPlayerException ignored) {
+        if (status == GuestUnlockPlugin.ApplicationStatus.ACCEPTED && unlocked == null) {
+            return true;
         }
+        Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager()
+                .getHero(playerId);
+        if (status == GuestUnlockPlugin.ApplicationStatus.ACCEPTED
+                && hero.getVirtualProfession().getAttachedLevel().getLevel() < plugin.config.member_level) {
+            return true;
+        }
+
         return false;
     }
 
@@ -59,46 +58,37 @@ public class PlayerData {
         final GuestUnlockPlugin plugin = RaidCraft.getComponent(GuestUnlockPlugin.class);
 
         // update the players groups and unlock him in the skillsystem
-        try {
-            Player p = Bukkit.getPlayer(name);
-            if (p != null && p.getPlayer().isOnline()) {
+        Player p = Bukkit.getPlayer(playerId);
+        if (p != null && p.getPlayer().isOnline()) {
 
-                Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(name);
-                Database.getTable(GuestTable.class).unlockPlayer(name);
-                hero.getVirtualProfession().getAttachedLevel().setLevel(plugin.config.member_level);
+            Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager()
+                    .getHero(p.getUniqueId());
+            Database.getTable(GuestTable.class).unlockPlayer(playerId);
+            hero.getVirtualProfession().getAttachedLevel().setLevel(plugin.config.member_level);
 
-                final Player player = Bukkit.getPlayer(name);
-                if (player != null) {
-                    player.sendMessage(ChatColor.GREEN +
-                            "Deine Bewerbung wurde soeben angenommen und du wurdest freigeschaltet!\n" +
-                            "Viel Spass auf " + ChatColor.RED + "Raid-Craft.de!");
-                    if (plugin.config.teleport_unlock && plugin.getTutorialSpawn() != null) {
-                        player.sendMessage(ChatColor.YELLOW + "Du wirst in Kürze in das Tutorial teleportiert.");
-                        Bukkit.getScheduler().scheduleSyncDelayedTask(RaidCraft.getComponent(GuestUnlockPlugin.class), new Runnable() {
-                            @Override
-                            public void run() {
+            final Player player = Bukkit.getPlayer(playerId);
+            if (player != null) {
+                player.sendMessage(ChatColor.GREEN +
+                        "Deine Bewerbung wurde soeben angenommen und du wurdest freigeschaltet!\n" +
+                        "Viel Spass auf " + ChatColor.RED + "Raid-Craft.de!");
+                if (plugin.config.teleport_unlock && plugin.getTutorialSpawn() != null) {
+                    player.sendMessage(ChatColor.YELLOW + "Du wirst in Kürze in das Tutorial teleportiert.");
+                    Bukkit.getScheduler().scheduleSyncDelayedTask(RaidCraft.getComponent(GuestUnlockPlugin.class), new Runnable() {
+                        @Override
+                        public void run() {
 
-                                player.teleport(plugin.getTutorialSpawn());
-                            }
-                        }, 60L);
-                    }
+                            player.teleport(plugin.getTutorialSpawn());
+                        }
+                    }, 60L);
                 }
             }
-            // player is offline
-            Database.getTable(GuestTable.class).acceptPlayer(name);
-        } catch (UnknownPlayerException e) {
-            RaidCraft.LOGGER.warning(e.getMessage());
         }
+        // player is offline
+        Database.getTable(GuestTable.class).acceptPlayer(playerId);
     }
 
     public void updateLastJoin() {
 
-        Database.getTable(GuestTable.class).updateLastJoin(name);
-    }
-
-    @Override
-    public String toString() {
-
-        return name;
+        Database.getTable(GuestTable.class).updateLastJoin(playerId);
     }
 }

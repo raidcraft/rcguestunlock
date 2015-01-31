@@ -58,7 +58,7 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
 
     private void checkForUnlock(Player player) {
 
-        PlayerData data = table.getPlayer(player.getName());
+        PlayerData data = table.getPlayer(player.getUniqueId());
         if (data == null) {
             return;
         }
@@ -110,7 +110,7 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
 
         Player player = event.getPlayer();
         String name = player.getName();
-	    UUID uuid = player.getUniqueId();
+        UUID uuid = player.getUniqueId();
         File file = new File(event.getPlayer().getWorld().getWorldFolder(), "/playerdata/" + uuid + ".dat");
         if (!file.exists()) {
             players.add(name);
@@ -142,8 +142,8 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
         }
         // lets generate that player in the database
         // the database will return if player already exists
-        Database.getTable(GuestTable.class).addPlayer(event.getPlayer().getName());
-        Database.getTable(GuestTable.class).getPlayer(event.getPlayer().getName()).updateLastJoin();
+        Database.getTable(GuestTable.class).addPlayer(event.getPlayer().getUniqueId());
+        Database.getTable(GuestTable.class).getPlayer(event.getPlayer().getUniqueId()).updateLastJoin();
     }
 
     public static class LocalConfiguration extends ConfigurationBase<GuestUnlockPlugin> {
