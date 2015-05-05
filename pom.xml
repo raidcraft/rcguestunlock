@@ -38,7 +38,7 @@
     <repositories>
         <repository>
             <id>raidcraft</id>
-            <url>http://repo.raid-craft.eu/artifactory/repo/</url>
+            <url>http://repo.raid-craft.de/artifactory/repo/</url>
         </repository>
     </repositories>
 
