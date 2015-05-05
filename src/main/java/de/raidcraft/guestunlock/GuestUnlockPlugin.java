@@ -1,5 +1,6 @@
 package de.raidcraft.guestunlock;
 
+import com.avaje.ebean.annotation.EnumValue;
 import de.raidcraft.RaidCraft;
 import de.raidcraft.api.BasePlugin;
 import de.raidcraft.api.config.ConfigurationBase;
@@ -178,8 +179,11 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
 
     public enum ApplicationStatus {
 
+        @EnumValue("UNKNOWN")
         UNKNOWN,
+        @EnumValue("ACCEPTED")
         ACCEPTED,
+        @EnumValue("DENIED")
         DENIED;
 
         public static ApplicationStatus fromString(String status) {
