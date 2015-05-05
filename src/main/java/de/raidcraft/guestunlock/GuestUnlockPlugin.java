@@ -4,7 +4,6 @@ import de.raidcraft.RaidCraft;
 import de.raidcraft.api.BasePlugin;
 import de.raidcraft.api.config.ConfigurationBase;
 import de.raidcraft.api.config.Setting;
-import de.raidcraft.api.database.Database;
 import de.raidcraft.util.EnumUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -18,7 +17,9 @@ import org.bukkit.event.player.PlayerLoginEvent;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -32,7 +33,6 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
     private Set<String> players = new HashSet<>();
     public LocalConfiguration config;
     private Location tutorialSpawn = null;
-    private GuestTable table;
 
     @Override
     public void enable() {
@@ -41,30 +41,25 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
 
         registerEvents(this);
         registerCommands(Commands.class);
-        registerTable(GuestTable.class, new GuestTable());
-        table = Database.getTable(GuestTable.class);
 
         // start a task that notifies players when their application was accepted
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
-            @Override
-            public void run() {
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, () -> {
 
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    checkForUnlock(player);
-                }
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                checkForUnlock(player);
             }
         }, config.task_delay * 20, config.task_delay * 20);
     }
 
     private void checkForUnlock(Player player) {
 
-        PlayerData data = table.getPlayer(player.getUniqueId());
+        PlayerData data = PlayerData.getPlayer(player.getUniqueId());
         if (data == null) {
             return;
         }
         if (data.isAcceptedAndLocked()) {
             data.unlock();
-        } else if (data.status != ApplicationStatus.ACCEPTED && player.hasPermission("raidcraft.admin")) {
+        } else if (data.getApplicationStatus() != ApplicationStatus.ACCEPTED && player.hasPermission("raidcraft.admin")) {
             data.unlock();
         }
     }
@@ -72,6 +67,14 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
     @Override
     public void disable() {
 
+    }
+
+    @Override
+    public List<Class<?>> getDatabaseClasses() {
+
+        List<Class<?>> tables = new ArrayList<>();
+        tables.add(PlayerData.class);
+        return tables;
     }
 
     public void setTutorialSpawn(Location location) {
@@ -128,13 +131,7 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
         if (players.contains(event.getPlayer().getName())) {
             // teleport the player to the tutorial
             if (config.teleport_first_join && getTutorialSpawn() != null) {
-                Bukkit.getScheduler().runTaskLater(this, new Runnable() {
-                    @Override
-                    public void run() {
-
-                        event.getPlayer().teleport(getTutorialSpawn());
-                    }
-                }, 20L);
+                Bukkit.getScheduler().runTaskLater(this, () -> event.getPlayer().teleport(getTutorialSpawn()), 20L);
             }
             // update the players permission groups
             event.setJoinMessage(ChatColor.AQUA + event.getPlayer().getName() + ChatColor.YELLOW + " ist das erste Mal auf Raid-Craft!");
@@ -142,8 +139,8 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
         }
         // lets generate that player in the database
         // the database will return if player already exists
-        Database.getTable(GuestTable.class).addPlayer(event.getPlayer().getUniqueId());
-        Database.getTable(GuestTable.class).getPlayer(event.getPlayer().getUniqueId()).updateLastJoin();
+        PlayerData.addPlayer(event.getPlayer().getUniqueId());
+        PlayerData.getPlayer(event.getPlayer().getUniqueId()).updateLastJoin();
     }
 
     public static class LocalConfiguration extends ConfigurationBase<GuestUnlockPlugin> {

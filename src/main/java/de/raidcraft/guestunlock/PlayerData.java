@@ -1,16 +1,21 @@
 package de.raidcraft.guestunlock;
 
 import de.raidcraft.RaidCraft;
-import de.raidcraft.api.database.Database;
 import de.raidcraft.skills.SkillsPlugin;
 import de.raidcraft.skills.api.hero.Hero;
+import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -18,34 +23,67 @@ import java.util.UUID;
  * Date: 09.12.12 - 16:40
  * Description:
  */
+@Entity
+@Getter
+@Setter
+@Table(name = "raidcraft_guests")
 public class PlayerData {
 
-    public final UUID playerId;
-    public final Timestamp firstJoin;
-    public final Timestamp lastJoin;
-    public final Timestamp unlocked;
-    public final Timestamp applicationProcessed;
-    public final GuestUnlockPlugin.ApplicationStatus status;
+    public static boolean exists(UUID playerId) {
 
-    public PlayerData(UUID playerId, ResultSet resultSet) throws SQLException {
-
-        this.playerId = playerId;
-        this.firstJoin = resultSet.getTimestamp("first_join");
-        this.lastJoin = resultSet.getTimestamp("last_join");
-        this.unlocked = resultSet.getTimestamp("unlocked");
-        this.applicationProcessed = resultSet.getTimestamp("application_processed");
-        this.status = GuestUnlockPlugin.ApplicationStatus.fromString(resultSet.getString("application_status"));
+        PlayerData playerData = RaidCraft.getDatabase(GuestUnlockPlugin.class).find(PlayerData.class).where()
+                .eq("player_id", playerId)
+                .findUnique();
+        return playerData != null;
     }
+
+    public static void addPlayer(UUID playerId) {
+
+        if (exists(playerId)) {
+            return;
+        }
+        OfflinePlayer offlinePlayer = Bukkit.getPlayer(playerId);
+        PlayerData playerData = new PlayerData();
+        playerData.setPlayer(offlinePlayer.getName());
+        playerData.setPlayerId(playerId);
+        playerData.setFirstJoin(Timestamp.from(Instant.now()));
+        playerData.setLastJoin(Timestamp.from(Instant.now()));
+        playerData.setApplicationStatus(GuestUnlockPlugin.ApplicationStatus.UNKNOWN);
+        RaidCraft.getDatabase(GuestUnlockPlugin.class).save(playerData);
+    }
+
+    public static PlayerData getPlayer(UUID playerId) {
+
+        return RaidCraft.getDatabase(GuestUnlockPlugin.class).find(PlayerData.class).where()
+                .eq("player_id", playerId).findUnique();
+    }
+
+    public static List<PlayerData> getPlayers(String name) {
+
+        return RaidCraft.getDatabase(GuestUnlockPlugin.class).find(PlayerData.class).where()
+                .like("player", name)
+                .orderBy("last_join desc").findList();
+    }
+
+    @Id
+    private int id;
+    private String player;
+    private UUID playerId;
+    private Timestamp firstJoin;
+    private Timestamp lastJoin;
+    private Timestamp unlocked;
+    private Timestamp applicationProcessed;
+    private GuestUnlockPlugin.ApplicationStatus applicationStatus;
+    private String forumPostUrl;
 
     public boolean isAcceptedAndLocked() {
 
         final GuestUnlockPlugin plugin = RaidCraft.getComponent(GuestUnlockPlugin.class);
-        if (status == GuestUnlockPlugin.ApplicationStatus.ACCEPTED && unlocked == null) {
+        if (applicationStatus == GuestUnlockPlugin.ApplicationStatus.ACCEPTED && unlocked == null) {
             return true;
         }
-        Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager()
-                .getHero(playerId);
-        if (status == GuestUnlockPlugin.ApplicationStatus.ACCEPTED
+        Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(playerId);
+        if (applicationStatus == GuestUnlockPlugin.ApplicationStatus.ACCEPTED
                 && hero.getVirtualProfession().getAttachedLevel().getLevel() < plugin.config.member_level) {
             return true;
         }
@@ -61,9 +99,11 @@ public class PlayerData {
         Player p = Bukkit.getPlayer(playerId);
         if (p != null && p.getPlayer().isOnline()) {
 
-            Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager()
-                    .getHero(p.getUniqueId());
-            Database.getTable(GuestTable.class).unlockPlayer(playerId);
+            Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(p.getUniqueId());
+
+            setUnlocked(Timestamp.from(Instant.now()));
+            RaidCraft.getDatabase(GuestUnlockPlugin.class).update(this);
+
             hero.getVirtualProfession().getAttachedLevel().setLevel(plugin.config.member_level);
 
             final Player player = Bukkit.getPlayer(playerId);
@@ -84,11 +124,14 @@ public class PlayerData {
             }
         }
         // player is offline
-        Database.getTable(GuestTable.class).acceptPlayer(playerId);
+        setApplicationStatus(GuestUnlockPlugin.ApplicationStatus.ACCEPTED);
+        setApplicationProcessed(Timestamp.from(Instant.now()));
+        RaidCraft.getDatabase(GuestUnlockPlugin.class).update(this);
     }
 
     public void updateLastJoin() {
 
-        Database.getTable(GuestTable.class).updateLastJoin(playerId);
+        setLastJoin(Timestamp.from(Instant.now()));
+        RaidCraft.getDatabase(GuestUnlockPlugin.class).update(this);
     }
 }

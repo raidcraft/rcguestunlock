@@ -5,7 +5,6 @@ import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.minecraft.util.commands.CommandPermissions;
 import de.raidcraft.RaidCraft;
-import de.raidcraft.api.database.Database;
 import de.raidcraft.skills.SkillsPlugin;
 import de.raidcraft.skills.api.hero.Hero;
 import de.raidcraft.util.CommandUtil;
@@ -85,18 +84,21 @@ public class Commands {
     public void unlock(CommandContext args, CommandSender sender) throws CommandException {
 
         UUID playerId = UUIDUtil.convertPlayer(args.getString(0));
-        PlayerData player = Database.getTable(GuestTable.class).getPlayer(playerId);
+        PlayerData player = PlayerData.getPlayer(playerId);
         if (!args.hasFlag('f') && player == null) {
             throw new CommandException("Es gibt keinen Spieler mit dem Namen: " + args.getString(0));
         }
         // create a new player entry
         if (player == null && args.hasFlag('f')) {
-            Database.getTable(GuestTable.class).addPlayer(playerId);
-            player = Database.getTable(GuestTable.class).getPlayer(playerId);
+            PlayerData.addPlayer(playerId);
+            player = PlayerData.getPlayer(playerId);
+        }
+        if (player == null) {
+            throw new CommandException("Player " + playerId + " was not found!");
         }
         Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager()
                 .getHero(playerId);
-        if (player.unlocked != null && hero.getVirtualProfession().getAttachedLevel().getLevel() >= plugin.config.member_level) {
+        if (player.getUnlocked() != null && hero.getVirtualProfession().getAttachedLevel().getLevel() >= plugin.config.member_level) {
             throw new CommandException("Der Spieler wurde bereits freigeschaltet.");
         }
         player.unlock();
@@ -119,7 +121,7 @@ public class Commands {
             public String format(PlayerData playerData) {
 
                 StringBuilder sb = new StringBuilder();
-                switch (playerData.status) {
+                switch (playerData.getApplicationStatus()) {
 
                     case ACCEPTED:
                         sb.append(ChatColor.GREEN);
@@ -131,12 +133,12 @@ public class Commands {
                         sb.append(ChatColor.AQUA);
                         break;
                 }
-                sb.append(UUIDUtil.getNameFromUUID(playerData.playerId));
+                sb.append(UUIDUtil.getNameFromUUID(playerData.getPlayerId()));
                 sb.append(ChatColor.GRAY).append(ChatColor.ITALIC).append(" - ");
-                sb.append(GuestUnlockPlugin.DATE_FORMAT.format(playerData.firstJoin)).append(" - ");
-                sb.append((playerData.unlocked == null ? ChatColor.RED + "Not Unlocked" : GuestUnlockPlugin.DATE_FORMAT.format(playerData.unlocked)));
+                sb.append(GuestUnlockPlugin.DATE_FORMAT.format(playerData.getFirstJoin())).append(" - ");
+                sb.append((playerData.getUnlocked() == null ? ChatColor.RED + "Not Unlocked" : GuestUnlockPlugin.DATE_FORMAT.format(playerData.getUnlocked())));
                 return sb.toString();
             }
-        }.display(sender, Database.getTable(GuestTable.class).getPlayers(args.getString(0)), args.getFlagInteger('p', 1));
+        }.display(sender, PlayerData.getPlayers(args.getString(0)), args.getFlagInteger('p', 1));
     }
 }
