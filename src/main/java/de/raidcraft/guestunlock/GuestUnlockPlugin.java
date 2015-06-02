@@ -15,6 +15,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -131,14 +132,12 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
         // lets set the permission group guest if this is his first join
         if (players.contains(event.getPlayer().getName())) {
             // teleport the player to the tutorial
-            final UUID uniqueId = event.getPlayer().getUniqueId();
             if (config.teleport_first_join && getTutorialSpawn() != null) {
-                Bukkit.getScheduler().runTaskLater(this, () -> {
-                    // bukkit has a null reference of the player after joining
-                    // we need to get the current and active reference
-                    Player player = Bukkit.getPlayer(uniqueId);
-                    if (player != null) player.teleport(getTutorialSpawn());
-                }, 20L);
+                if (getTutorialSpawn().getWorld() == null) {
+                    getLogger().warning("Tutorial world is null: " + config.world + " - not teleporting new player to the tutorial!");
+                } else {
+                    event.getPlayer().teleport(getTutorialSpawn(), PlayerTeleportEvent.TeleportCause.PLUGIN);
+                }
             }
             // update the players permission groups
             event.setJoinMessage(ChatColor.AQUA + event.getPlayer().getName() + ChatColor.YELLOW + " ist das erste Mal auf Raid-Craft!");
