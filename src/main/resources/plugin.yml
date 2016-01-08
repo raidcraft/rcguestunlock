@@ -5,4 +5,3 @@ description: Guestunlock and tutorial functionality
 author: Silthus
 website: http://www.raid-craft.de
 depend: [RaidCraft-API]
-softdepend: [RCSkills]

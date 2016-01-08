@@ -140,7 +140,6 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
                 }
             }
             // update the players permission groups
-            event.setJoinMessage(ChatColor.AQUA + event.getPlayer().getName() + ChatColor.YELLOW + " ist das erste Mal auf Raid-Craft!");
             players.remove(event.getPlayer().getName());
         }
         // lets generate that player in the database
@@ -168,7 +167,7 @@ public class GuestUnlockPlugin extends BasePlugin implements Listener {
         @Setting("tutorial-spawn.yaw")
         public float yaw = 178.34F;
         @Setting("teleport-on-first-join")
-        public boolean teleport_first_join = true;
+        public boolean teleport_first_join = false;
         @Setting("teleport-on-unlock")
         public boolean teleport_unlock = false;
         @Setting("tutorial-range")
