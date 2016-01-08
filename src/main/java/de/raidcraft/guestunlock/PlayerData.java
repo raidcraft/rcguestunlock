@@ -1,8 +1,6 @@
 package de.raidcraft.guestunlock;
 
 import de.raidcraft.RaidCraft;
-import de.raidcraft.skills.SkillsPlugin;
-import de.raidcraft.skills.api.hero.Hero;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Bukkit;
@@ -82,9 +80,10 @@ public class PlayerData {
         if (applicationStatus == GuestUnlockPlugin.ApplicationStatus.ACCEPTED && unlocked == null) {
             return true;
         }
-        Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(playerId);
+
+        Player bukkitPlayer = Bukkit.getPlayer(playerId);
         if (applicationStatus == GuestUnlockPlugin.ApplicationStatus.ACCEPTED
-                && hero.getVirtualProfession().getAttachedLevel().getLevel() < plugin.config.member_level) {
+                && bukkitPlayer != null && !bukkitPlayer.hasPermission("raidcraft.unlocked")) {
             return true;
         }
 
@@ -99,12 +98,8 @@ public class PlayerData {
         Player p = Bukkit.getPlayer(playerId);
         if (p != null && p.getPlayer().isOnline()) {
 
-            Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager().getHero(p.getUniqueId());
-
             setUnlocked(Timestamp.from(Instant.now()));
             RaidCraft.getDatabase(GuestUnlockPlugin.class).update(this);
-
-            hero.getVirtualProfession().getAttachedLevel().setLevel(plugin.config.member_level);
 
             final Player player = Bukkit.getPlayer(playerId);
             if (player != null) {

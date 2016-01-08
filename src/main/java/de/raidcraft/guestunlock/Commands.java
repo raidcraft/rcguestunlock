@@ -5,12 +5,11 @@ import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.minecraft.util.commands.CommandPermissions;
 import de.raidcraft.RaidCraft;
-import de.raidcraft.skills.SkillsPlugin;
-import de.raidcraft.skills.api.hero.Hero;
 import de.raidcraft.util.CommandUtil;
 import de.raidcraft.util.LocationUtil;
 import de.raidcraft.util.PaginatedResult;
 import de.raidcraft.util.UUIDUtil;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -96,9 +95,14 @@ public class Commands {
         if (player == null) {
             throw new CommandException("Player " + playerId + " was not found!");
         }
-        Hero hero = RaidCraft.getComponent(SkillsPlugin.class).getCharacterManager()
-                .getHero(playerId);
-        if (player.getUnlocked() != null && hero.getVirtualProfession().getAttachedLevel().getLevel() >= plugin.config.member_level) {
+        Player bukkitPlayer = Bukkit.getPlayer(player.getPlayerId());
+        boolean unlocked = false;
+        if(bukkitPlayer != null) {
+            if(bukkitPlayer.hasPermission("raidcraft.unlocked")) {
+                unlocked = true;
+            }
+        }
+        if (player.getUnlocked() != null && unlocked) {
             throw new CommandException("Der Spieler wurde bereits freigeschaltet.");
         }
         player.unlock();
